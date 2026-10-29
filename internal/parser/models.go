@@ -93,3 +93,26 @@ type SessionSummaryItem struct {
 	LastActivityStr string    `json:"last_activity_str"`
 	IsActive        bool      `json:"is_active"`
 }
+
+// PeriodStat represents aggregated consumption for a time period (day, month, or all-time).
+type PeriodStat struct {
+	PeriodKey    string  `json:"period_key"`   // e.g. "2026-10-30" or "2026-10"
+	Label        string  `json:"label"`        // e.g. "Today (Oct 30)", "October 2026", "All-Time"
+	TotalTokens  int64   `json:"total_tokens"`
+	InputTokens  int64   `json:"input_tokens"`
+	CacheTokens  int64   `json:"cache_tokens"`
+	OutputTokens int64   `json:"output_tokens"`
+	CacheRatio   float64 `json:"cache_ratio"`
+	Cost         float64 `json:"cost"`
+	Savings      float64 `json:"savings"`
+	TurnCount    int     `json:"turn_count"`
+}
+
+// ConsumptionSummary provides multi-horizon token expenditure analytics (All-time, Monthly, Daily).
+type ConsumptionSummary struct {
+	AllTime   PeriodStat   `json:"all_time"`
+	ThisMonth PeriodStat   `json:"this_month"`
+	Today     PeriodStat   `json:"today"`
+	Daily     []PeriodStat `json:"daily"`    // Descending by day
+	Monthly   []PeriodStat `json:"monthly"`  // Descending by month
+}

@@ -91,4 +91,25 @@ func TestAggregatorIngestAndSnapshot(t *testing.T) {
 	if len(sessions) < 2 {
 		t.Errorf("expected at least 2 sessions, got %d", len(sessions))
 	}
+
+	// Verify Multi-Horizon Consumption Summary
+	cons := agg.GetConsumptionSummary()
+	if cons.AllTime.TotalTokens != 71500 {
+		t.Errorf("expected 71500 all time tokens in consumption, got %d", cons.AllTime.TotalTokens)
+	}
+	if cons.Today.TotalTokens != 71500 {
+		t.Errorf("expected 71500 today tokens, got %d", cons.Today.TotalTokens)
+	}
+	if cons.ThisMonth.TotalTokens != 71500 {
+		t.Errorf("expected 71500 this month tokens, got %d", cons.ThisMonth.TotalTokens)
+	}
+	if len(cons.Daily) != 1 {
+		t.Errorf("expected 1 daily entry, got %d", len(cons.Daily))
+	}
+	if len(cons.Monthly) != 1 {
+		t.Errorf("expected 1 monthly entry, got %d", len(cons.Monthly))
+	}
+	if cons.AllTime.TurnCount != 2 {
+		t.Errorf("expected 2 turns in consumption summary, got %d", cons.AllTime.TurnCount)
+	}
 }

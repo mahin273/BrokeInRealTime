@@ -45,6 +45,11 @@ func TestServerEndpoints(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(sessions)
 	})
+	mux.HandleFunc("/api/consumption", func(w http.ResponseWriter, r *http.Request) {
+		consumption := agg.GetConsumptionSummary()
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(consumption)
+	})
 	mux.HandleFunc("/api/export", func(w http.ResponseWriter, r *http.Request) {
 		snap := agg.Snapshot()
 		md := GenerateMarkdownReport(snap)
@@ -94,7 +99,21 @@ func TestServerEndpoints(t *testing.T) {
 		t.Errorf("expected 200 OK for export, got %d", respExport.StatusCode)
 	}
 
-	// 4. Test WebSocket connection
+	// 4. Test /api/consumption
+	respCons, err := http.Get(server.URL + "/api/consumption")
+	if err != nil {
+		t.Fatalf("GET /api/consumption failed: %v", err)
+	}
+	defer respCons.Body.Close()
+	var cons parser.ConsumptionSummary
+	if err := json.NewDecoder(respCons.Body).Decode(&cons); err != nil {
+		t.Fatalf("failed to decode consumption summary: %v", err)
+	}
+	if cons.AllTime.TotalTokens != 5100 {
+		t.Errorf("expected 5100 all time tokens in consumption summary, got %d", cons.AllTime.TotalTokens)
+	}
+
+	// 5. Test WebSocket connection
 	wsURL := "ws" + strings.TrimPrefix(server.URL, "http") + "/ws"
 	header := http.Header{}
 	header.Set("Origin", "http://127.0.0.1:8080")

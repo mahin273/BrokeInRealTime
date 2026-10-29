@@ -80,6 +80,9 @@ type TelemetrySnapshot struct {
 	AllTimeOutput       int64                `json:"all_time_output"`
 	TotalSessions       int                  `json:"total_sessions"`
 
+	// Periodic Consumption Breakdown (All-Time, Monthly, Daily)
+	Consumption         parser.ConsumptionSummary `json:"consumption"`
+
 	BurnRatePerHour     float64              `json:"burn_rate_per_hour"`
 	TokensPerSec        float64              `json:"tokens_per_sec"`
 	AppTokens           int64                `json:"app_tokens"`
@@ -125,6 +128,10 @@ type Aggregator struct {
 	sessionToolStats map[string]map[string]*parser.ToolStat
 	globalToolStats  map[string]*parser.ToolStat
 
+	// Periodic aggregations (Daily & Monthly)
+	dailyStats   map[string]*parser.PeriodStat
+	monthlyStats map[string]*parser.PeriodStat
+
 	// Rolling window (last 60 seconds, keyed by unix second)
 	rollingSeconds map[int64]*TimePoint
 
@@ -144,6 +151,8 @@ func NewAggregator(cfg *config.Config) *Aggregator {
 		sessionSteps:     make(map[string][]StepData),
 		sessionToolStats: make(map[string]map[string]*parser.ToolStat),
 		globalToolStats:  make(map[string]*parser.ToolStat),
+		dailyStats:       make(map[string]*parser.PeriodStat),
+		monthlyStats:     make(map[string]*parser.PeriodStat),
 		rollingSeconds:   make(map[int64]*TimePoint),
 		recentEvents:     make([]parser.TokenEvent, 0, 50),
 		quota: parser.QuotaCooldown{
@@ -252,6 +261,42 @@ func (a *Aggregator) IngestEvent(evt parser.TokenEvent) {
 		gt.TotalTokens += perTot
 		gt.EstCost += perCost
 	}
+
+	// Daily & Monthly period accumulation
+	dayKey := evt.CreatedAt.Format("2006-01-02")
+	monthKey := evt.CreatedAt.Format("2006-01")
+
+	ds, ok := a.dailyStats[dayKey]
+	if !ok {
+		ds = &parser.PeriodStat{
+			PeriodKey: dayKey,
+			Label:     evt.CreatedAt.Format("Jan 02, 2006"),
+		}
+		a.dailyStats[dayKey] = ds
+	}
+	ds.TotalTokens += evt.TotalTokens
+	ds.InputTokens += evt.InputTokens
+	ds.CacheTokens += evt.CacheReadTokens
+	ds.OutputTokens += evt.OutputTokens
+	ds.Cost += evt.IncrementalCost
+	ds.Savings += evt.CacheSavings
+	ds.TurnCount++
+
+	ms, mok := a.monthlyStats[monthKey]
+	if !mok {
+		ms = &parser.PeriodStat{
+			PeriodKey: monthKey,
+			Label:     evt.CreatedAt.Format("January 2006"),
+		}
+		a.monthlyStats[monthKey] = ms
+	}
+	ms.TotalTokens += evt.TotalTokens
+	ms.InputTokens += evt.InputTokens
+	ms.CacheTokens += evt.CacheReadTokens
+	ms.OutputTokens += evt.OutputTokens
+	ms.Cost += evt.IncrementalCost
+	ms.Savings += evt.CacheSavings
+	ms.TurnCount++
 
 	sec := evt.CreatedAt.Unix()
 	tp, ok := a.rollingSeconds[sec]
@@ -504,6 +549,8 @@ func (a *Aggregator) SnapshotForSession(targetID string) TelemetrySnapshot {
 		healthMsg = fmt.Sprintf("Context Bloat Warning: %.1f%% (%d / 1M) — Consider running /compact to optimize cache efficiency.", contextPct, sessionContext)
 	}
 
+	consumption := a.computeConsumptionSummary(now)
+
 	return TelemetrySnapshot{
 		Timestamp:           nowSec,
 		SessionID:           sessionShort,
@@ -524,6 +571,7 @@ func (a *Aggregator) SnapshotForSession(targetID string) TelemetrySnapshot {
 		Steps:               stepsCopy,
 		ToolStats:           toolStatsList,
 		Subagents:           subagentsList,
+		Consumption:         consumption,
 		AllTimeTokens:       allTimeTotalTokens,
 		AllTimeCost:         a.globalCost,
 		AllTimeInput:        a.globalInput,
@@ -640,3 +688,102 @@ func (a *Aggregator) GetSessionsList() []parser.SessionSummaryItem {
 
 	return items
 }
+
+// computeConsumptionSummary aggregates multi-horizon tokens and costs (call with a.mu locked).
+func (a *Aggregator) computeConsumptionSummary(now time.Time) parser.ConsumptionSummary {
+	allTimePrompt := a.globalInput + a.globalCached
+	var allTimeRatio float64
+	if allTimePrompt > 0 {
+		allTimeRatio = (float64(a.globalCached) / float64(allTimePrompt)) * 100.0
+	}
+
+	totalTurns := 0
+	for _, ds := range a.dailyStats {
+		totalTurns += ds.TurnCount
+	}
+
+	allTimeStat := parser.PeriodStat{
+		PeriodKey:    "all_time",
+		Label:        "All-Time",
+		TotalTokens:  a.globalInput + a.globalCached + a.globalOutput,
+		InputTokens:  a.globalInput,
+		CacheTokens:  a.globalCached,
+		OutputTokens: a.globalOutput,
+		CacheRatio:   allTimeRatio,
+		Cost:         a.globalCost,
+		Savings:      a.globalSave,
+		TurnCount:    totalTurns,
+	}
+
+	monthKey := now.Format("2006-01")
+	var thisMonthStat parser.PeriodStat
+	if ms, ok := a.monthlyStats[monthKey]; ok {
+		thisMonthStat = *ms
+		totalPrompt := thisMonthStat.InputTokens + thisMonthStat.CacheTokens
+		if totalPrompt > 0 {
+			thisMonthStat.CacheRatio = (float64(thisMonthStat.CacheTokens) / float64(totalPrompt)) * 100.0
+		}
+	} else {
+		thisMonthStat = parser.PeriodStat{
+			PeriodKey: monthKey,
+			Label:     now.Format("January 2006"),
+		}
+	}
+
+	todayKey := now.Format("2006-01-02")
+	var todayStat parser.PeriodStat
+	if ds, ok := a.dailyStats[todayKey]; ok {
+		todayStat = *ds
+		totalPrompt := todayStat.InputTokens + todayStat.CacheTokens
+		if totalPrompt > 0 {
+			todayStat.CacheRatio = (float64(todayStat.CacheTokens) / float64(totalPrompt)) * 100.0
+		}
+	} else {
+		todayStat = parser.PeriodStat{
+			PeriodKey: todayKey,
+			Label:     now.Format("Today (Jan 02)"),
+		}
+	}
+
+	dailyList := make([]parser.PeriodStat, 0, len(a.dailyStats))
+	for _, ds := range a.dailyStats {
+		stat := *ds
+		totalPrompt := stat.InputTokens + stat.CacheTokens
+		if totalPrompt > 0 {
+			stat.CacheRatio = (float64(stat.CacheTokens) / float64(totalPrompt)) * 100.0
+		}
+		dailyList = append(dailyList, stat)
+	}
+	sort.Slice(dailyList, func(i, j int) bool {
+		return dailyList[i].PeriodKey > dailyList[j].PeriodKey
+	})
+
+	monthlyList := make([]parser.PeriodStat, 0, len(a.monthlyStats))
+	for _, ms := range a.monthlyStats {
+		stat := *ms
+		totalPrompt := stat.InputTokens + stat.CacheTokens
+		if totalPrompt > 0 {
+			stat.CacheRatio = (float64(stat.CacheTokens) / float64(totalPrompt)) * 100.0
+		}
+		monthlyList = append(monthlyList, stat)
+	}
+	sort.Slice(monthlyList, func(i, j int) bool {
+		return monthlyList[i].PeriodKey > monthlyList[j].PeriodKey
+	})
+
+	return parser.ConsumptionSummary{
+		AllTime:   allTimeStat,
+		ThisMonth: thisMonthStat,
+		Today:     todayStat,
+		Daily:     dailyList,
+		Monthly:   monthlyList,
+	}
+}
+
+// GetConsumptionSummary returns multi-horizon token consumption metrics thread-safely.
+func (a *Aggregator) GetConsumptionSummary() parser.ConsumptionSummary {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	return a.computeConsumptionSummary(time.Now())
+}
+

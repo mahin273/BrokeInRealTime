@@ -56,6 +56,13 @@ func (s *Server) Start() error {
 		_ = json.NewEncoder(w).Encode(sessions)
 	})
 
+	// API Consumption route for multi-horizon analytics (All-time, Monthly, Daily)
+	mux.HandleFunc("/api/consumption", func(w http.ResponseWriter, r *http.Request) {
+		consumption := s.agg.GetConsumptionSummary()
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(consumption)
+	})
+
 	// API Export route for Markdown & JSON telemetry reports
 	mux.HandleFunc("/api/export", func(w http.ResponseWriter, r *http.Request) {
 		sessionID := r.URL.Query().Get("session_id")

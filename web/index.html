@@ -209,6 +209,63 @@
     .tool-bar-bg { width: 100%; height: 6px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; overflow: hidden; margin-top: 4px; }
     .tool-bar-fill { height: 100%; border-radius: 4px; background: var(--primary); transition: width 0.3s ease; }
 
+    /* Periodic Consumption Section */
+    .consumption-section {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 20px; display: flex; flex-direction: column; gap: 18px;
+    }
+    .consumption-header {
+      display: flex; flex-direction: column; gap: 10px; justify-content: space-between;
+    }
+    @media (min-width: 640px) {
+      .consumption-header { flex-direction: row; align-items: center; }
+    }
+    .grid-horizons {
+      display: grid; grid-template-columns: 1fr; gap: 14px;
+    }
+    @media (min-width: 900px) {
+      .grid-horizons { grid-template-columns: 1fr 1fr 1fr; }
+    }
+    .horizon-card {
+      background: var(--background); border: 1px solid var(--border); border-radius: 10px;
+      padding: 16px; display: flex; flex-direction: column; gap: 10px;
+    }
+    .horizon-top {
+      display: flex; justify-content: space-between; align-items: flex-start;
+    }
+    .horizon-badge {
+      font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 4px;
+    }
+    .horizon-title {
+      font-size: 13px; font-weight: 700; color: var(--foreground); margin: 0;
+    }
+    .horizon-cost {
+      font-size: 15px; font-weight: 800; font-family: monospace; color: var(--foreground);
+    }
+    .horizon-tokens {
+      font-size: 24px; font-weight: 800; font-family: monospace; letter-spacing: -0.5px; color: #fff;
+    }
+    .horizon-sub {
+      font-size: 11px; color: var(--muted-foreground);
+    }
+    .horizon-bar-wrap {
+      width: 100%; height: 6px; background: rgba(255, 255, 255, 0.05); border-radius: 4px;
+      overflow: hidden; display: flex;
+    }
+    .horizon-bar-cache { height: 100%; background: var(--emerald); }
+    .horizon-bar-input { height: 100%; background: var(--sky); }
+    .horizon-bar-output { height: 100%; background: var(--amber); }
+    .horizon-stats {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 11px; font-family: monospace;
+      padding-top: 6px; border-top: 1px solid var(--border);
+    }
+    .horizon-stats .dim {
+      color: var(--muted-foreground); font-family: sans-serif; font-size: 10px;
+    }
+    .consumption-breakdown {
+      border-top: 1px solid var(--border); padding-top: 14px;
+    }
+
     /* Table Section */
     .table-section {
       background: var(--card); border: 1px solid var(--border); border-radius: 12px;
@@ -621,6 +678,134 @@
         </div>
       </div>
 
+    </section>
+
+    <!-- Periodic Token Consumption Horizons (All-Time, Monthly, Daily) -->
+    <section class="consumption-section">
+      <div class="consumption-header">
+        <div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <h2 style="font-size:16px; font-weight:700;">Periodic Token Consumption</h2>
+            <span class="badge" style="background:rgba(56,189,248,0.15); color:var(--sky); border-color:transparent;">Multi-Horizon</span>
+          </div>
+          <p style="font-size:12px; color:var(--muted-foreground);">
+            Machine-wide all-time, monthly, and daily token consumption, context caching efficiency, and cost telemetry.
+          </p>
+        </div>
+
+        <div class="btn-toggle-group">
+          <button id="viewDailyBreakdownBtn" class="btn-toggle active">Daily History</button>
+          <button id="viewMonthlyBreakdownBtn" class="btn-toggle">Monthly Rollup</button>
+        </div>
+      </div>
+
+      <!-- 3 Horizon Cards -->
+      <div class="grid-horizons">
+        <!-- All-Time Card -->
+        <div class="horizon-card">
+          <div class="horizon-top">
+            <div>
+              <span class="horizon-badge" style="background:rgba(168,85,247,0.15); color:var(--purple);">ALL-TIME</span>
+              <h3 class="horizon-title" id="horizonAllTimeLabel">All-Time Machine Total</h3>
+            </div>
+            <span class="horizon-cost" id="horizonAllTimeCost">$0.00</span>
+          </div>
+          <div class="horizon-tokens" id="horizonAllTimeTokens">0</div>
+          <div class="horizon-sub" id="horizonAllTimeTurns">0 Turns Recorded</div>
+          <div class="horizon-bar-wrap">
+            <div class="horizon-bar-cache" id="horizonAllTimeBarCache" style="width:0%;"></div>
+            <div class="horizon-bar-input" id="horizonAllTimeBarInput" style="width:0%;"></div>
+            <div class="horizon-bar-output" id="horizonAllTimeBarOutput" style="width:0%;"></div>
+          </div>
+          <div class="horizon-stats">
+            <div><span style="color:var(--emerald);" id="horizonAllTimeCache">0</span> <span class="dim">Cache (<span id="horizonAllTimeCachePct">0%</span>)</span></div>
+            <div><span style="color:var(--sky);" id="horizonAllTimeInput">0</span> <span class="dim">Fresh In</span></div>
+            <div><span style="color:var(--amber);" id="horizonAllTimeOutput">0</span> <span class="dim">Output</span></div>
+            <div><span style="color:var(--emerald);" id="horizonAllTimeSavings">Saved $0.00</span></div>
+          </div>
+        </div>
+
+        <!-- This Month Card -->
+        <div class="horizon-card">
+          <div class="horizon-top">
+            <div>
+              <span class="horizon-badge" style="background:rgba(56,189,248,0.15); color:var(--sky);">MONTHLY</span>
+              <h3 class="horizon-title" id="horizonMonthLabel">October 2026</h3>
+            </div>
+            <span class="horizon-cost" id="horizonMonthCost">$0.00</span>
+          </div>
+          <div class="horizon-tokens" id="horizonMonthTokens">0</div>
+          <div class="horizon-sub" id="horizonMonthTurns">0 Recorded Turns This Month</div>
+          <div class="horizon-bar-wrap">
+            <div class="horizon-bar-cache" id="horizonMonthBarCache" style="width:0%;"></div>
+            <div class="horizon-bar-input" id="horizonMonthBarInput" style="width:0%;"></div>
+            <div class="horizon-bar-output" id="horizonMonthBarOutput" style="width:0%;"></div>
+          </div>
+          <div class="horizon-stats">
+            <div><span style="color:var(--emerald);" id="horizonMonthCache">0</span> <span class="dim">Cache (<span id="horizonMonthCachePct">0%</span>)</span></div>
+            <div><span style="color:var(--sky);" id="horizonMonthInput">0</span> <span class="dim">Fresh In</span></div>
+            <div><span style="color:var(--amber);" id="horizonMonthOutput">0</span> <span class="dim">Output</span></div>
+            <div><span style="color:var(--emerald);" id="horizonMonthSavings">Saved $0.00</span></div>
+          </div>
+        </div>
+
+        <!-- Today Card -->
+        <div class="horizon-card">
+          <div class="horizon-top">
+            <div>
+              <span class="horizon-badge" style="background:rgba(16,185,129,0.15); color:var(--emerald);">DAILY</span>
+              <h3 class="horizon-title" id="horizonTodayLabel">Today</h3>
+            </div>
+            <span class="horizon-cost" id="horizonTodayCost">$0.00</span>
+          </div>
+          <div class="horizon-tokens" id="horizonTodayTokens">0</div>
+          <div class="horizon-sub" id="horizonTodayTurns">0 Active Turns Today</div>
+          <div class="horizon-bar-wrap">
+            <div class="horizon-bar-cache" id="horizonTodayBarCache" style="width:0%;"></div>
+            <div class="horizon-bar-input" id="horizonTodayBarInput" style="width:0%;"></div>
+            <div class="horizon-bar-output" id="horizonTodayBarOutput" style="width:0%;"></div>
+          </div>
+          <div class="horizon-stats">
+            <div><span style="color:var(--emerald);" id="horizonTodayCache">0</span> <span class="dim">Cache (<span id="horizonTodayCachePct">0%</span>)</span></div>
+            <div><span style="color:var(--sky);" id="horizonTodayInput">0</span> <span class="dim">Fresh In</span></div>
+            <div><span style="color:var(--amber);" id="horizonTodayOutput">0</span> <span class="dim">Output</span></div>
+            <div><span style="color:var(--emerald);" id="horizonTodaySavings">Saved $0.00</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- History Breakdown Table -->
+      <div class="consumption-breakdown">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <h4 id="breakdownTableTitle" style="font-size:13px; font-weight:600;">Daily Token Consumption Breakdown</h4>
+          <span id="breakdownRowCount" style="font-size:11px; color:var(--muted-foreground);">0 records</span>
+        </div>
+        <div class="table-wrapper" style="max-height:280px;">
+          <table id="consumptionHistoryTable">
+            <thead>
+              <tr>
+                <th>Period / Date</th>
+                <th class="text-right">Total Tokens</th>
+                <th style="width:140px;">Distribution</th>
+                <th class="text-right">Fresh Input</th>
+                <th class="text-right">Cache Read</th>
+                <th class="text-right">Cache Hit %</th>
+                <th class="text-right">Output</th>
+                <th class="text-right">Turns</th>
+                <th class="text-right">Est. Cost</th>
+                <th class="text-right">Savings</th>
+              </tr>
+            </thead>
+            <tbody id="consumptionHistoryBody">
+              <tr>
+                <td colspan="10" style="text-align:center; padding:20px; color:var(--muted-foreground);">
+                  Loading consumption history...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </section>
 
     <!-- Granular Step Explorer Table (Step-by-Step Ledger) -->
@@ -1397,6 +1582,166 @@
       velocityCtx.stroke();
     }
 
+    // --- HTML Sanitizer ---
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // --- Periodic Consumption Horizons & History Breakdown ---
+    let currentConsumptionMode = 'daily'; // 'daily' or 'monthly'
+    let cachedConsumptionData = null;
+
+    function renderConsumption(consumption) {
+      if (!consumption) return;
+      cachedConsumptionData = consumption;
+
+      // 1. All-Time Horizon Card
+      const allTime = consumption.all_time || {};
+      document.getElementById('horizonAllTimeLabel').textContent = allTime.label || 'All-Time';
+      document.getElementById('horizonAllTimeCost').textContent = formatUSD(allTime.cost || 0);
+      document.getElementById('horizonAllTimeTokens').textContent = formatNumber(allTime.total_tokens || 0);
+      document.getElementById('horizonAllTimeTurns').textContent = `${(allTime.turn_count || 0).toLocaleString()} Turns Recorded`;
+
+      const allTimeTot = (allTime.total_tokens || 1);
+      const atCachePct = ((allTime.cache_tokens || 0) / allTimeTot * 100).toFixed(1);
+      const atInPct = ((allTime.input_tokens || 0) / allTimeTot * 100).toFixed(1);
+      const atOutPct = ((allTime.output_tokens || 0) / allTimeTot * 100).toFixed(1);
+
+      document.getElementById('horizonAllTimeBarCache').style.width = atCachePct + '%';
+      document.getElementById('horizonAllTimeBarInput').style.width = atInPct + '%';
+      document.getElementById('horizonAllTimeBarOutput').style.width = atOutPct + '%';
+
+      document.getElementById('horizonAllTimeCache').textContent = formatNumber(allTime.cache_tokens || 0);
+      document.getElementById('horizonAllTimeCachePct').textContent = (allTime.cache_ratio || 0).toFixed(1) + '%';
+      document.getElementById('horizonAllTimeInput').textContent = formatNumber(allTime.input_tokens || 0);
+      document.getElementById('horizonAllTimeOutput').textContent = formatNumber(allTime.output_tokens || 0);
+      document.getElementById('horizonAllTimeSavings').textContent = `Saved ${formatUSD(allTime.savings || 0)}`;
+
+      // 2. Monthly Horizon Card
+      const thisMonth = consumption.this_month || {};
+      document.getElementById('horizonMonthLabel').textContent = thisMonth.label || 'This Month';
+      document.getElementById('horizonMonthCost').textContent = formatUSD(thisMonth.cost || 0);
+      document.getElementById('horizonMonthTokens').textContent = formatNumber(thisMonth.total_tokens || 0);
+      document.getElementById('horizonMonthTurns').textContent = `${(thisMonth.turn_count || 0).toLocaleString()} Turns This Month`;
+
+      const monthTot = (thisMonth.total_tokens || 1);
+      const mCachePct = ((thisMonth.cache_tokens || 0) / monthTot * 100).toFixed(1);
+      const mInPct = ((thisMonth.input_tokens || 0) / monthTot * 100).toFixed(1);
+      const mOutPct = ((thisMonth.output_tokens || 0) / monthTot * 100).toFixed(1);
+
+      document.getElementById('horizonMonthBarCache').style.width = mCachePct + '%';
+      document.getElementById('horizonMonthBarInput').style.width = mInPct + '%';
+      document.getElementById('horizonMonthBarOutput').style.width = mOutPct + '%';
+
+      document.getElementById('horizonMonthCache').textContent = formatNumber(thisMonth.cache_tokens || 0);
+      document.getElementById('horizonMonthCachePct').textContent = (thisMonth.cache_ratio || 0).toFixed(1) + '%';
+      document.getElementById('horizonMonthInput').textContent = formatNumber(thisMonth.input_tokens || 0);
+      document.getElementById('horizonMonthOutput').textContent = formatNumber(thisMonth.output_tokens || 0);
+      document.getElementById('horizonMonthSavings').textContent = `Saved ${formatUSD(thisMonth.savings || 0)}`;
+
+      // 3. Today Horizon Card
+      const today = consumption.today || {};
+      document.getElementById('horizonTodayLabel').textContent = today.label || 'Today';
+      document.getElementById('horizonTodayCost').textContent = formatUSD(today.cost || 0);
+      document.getElementById('horizonTodayTokens').textContent = formatNumber(today.total_tokens || 0);
+      document.getElementById('horizonTodayTurns').textContent = `${(today.turn_count || 0).toLocaleString()} Active Turns Today`;
+
+      const todayTot = (today.total_tokens || 1);
+      const tCachePct = ((today.cache_tokens || 0) / todayTot * 100).toFixed(1);
+      const tInPct = ((today.input_tokens || 0) / todayTot * 100).toFixed(1);
+      const tOutPct = ((today.output_tokens || 0) / todayTot * 100).toFixed(1);
+
+      document.getElementById('horizonTodayBarCache').style.width = tCachePct + '%';
+      document.getElementById('horizonTodayBarInput').style.width = tInPct + '%';
+      document.getElementById('horizonTodayBarOutput').style.width = tOutPct + '%';
+
+      document.getElementById('horizonTodayCache').textContent = formatNumber(today.cache_tokens || 0);
+      document.getElementById('horizonTodayCachePct').textContent = (today.cache_ratio || 0).toFixed(1) + '%';
+      document.getElementById('horizonTodayInput').textContent = formatNumber(today.input_tokens || 0);
+      document.getElementById('horizonTodayOutput').textContent = formatNumber(today.output_tokens || 0);
+      document.getElementById('horizonTodaySavings').textContent = `Saved ${formatUSD(today.savings || 0)}`;
+
+      renderConsumptionTable();
+    }
+
+    function renderConsumptionTable() {
+      if (!cachedConsumptionData) return;
+      const isDaily = (currentConsumptionMode === 'daily');
+      const items = isDaily ? (cachedConsumptionData.daily || []) : (cachedConsumptionData.monthly || []);
+      const title = isDaily ? 'Daily Token Consumption Breakdown' : 'Monthly Token Consumption Rollup';
+
+      document.getElementById('breakdownTableTitle').textContent = title;
+      document.getElementById('breakdownRowCount').textContent = `${items.length} records`;
+
+      const tbody = document.getElementById('consumptionHistoryBody');
+      if (!items || items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:20px; color:var(--muted-foreground);">No records available</td></tr>`;
+        return;
+      }
+
+      let maxTokens = 1;
+      for (const it of items) {
+        if (it.total_tokens > maxTokens) maxTokens = it.total_tokens;
+      }
+
+      tbody.innerHTML = items.map(it => {
+        const tot = it.total_tokens || 1;
+        const barWidth = Math.max(3, Math.round((it.total_tokens / maxTokens) * 100));
+        const cachePct = ((it.cache_tokens || 0) / tot * 100).toFixed(0);
+        const inPct = ((it.input_tokens || 0) / tot * 100).toFixed(0);
+        const outPct = ((it.output_tokens || 0) / tot * 100).toFixed(0);
+
+        return `
+          <tr>
+            <td style="font-weight:600; color:var(--foreground);">
+              ${escapeHtml(it.label || it.period_key)}
+              <span style="font-size:10px; color:var(--muted-foreground); display:block;">${escapeHtml(it.period_key)}</span>
+            </td>
+            <td class="text-right" style="font-weight:700; color:#fff;" title="${(it.total_tokens || 0).toLocaleString()} tokens">
+              ${formatNumber(it.total_tokens || 0)}
+            </td>
+            <td>
+              <div style="width:100%; display:flex; align-items:center; gap:6px;">
+                <div style="width:90px; height:7px; background:rgba(255,255,255,0.06); border-radius:4px; overflow:hidden; display:flex;">
+                  <div style="width:${cachePct}%; background:var(--emerald); height:100%;" title="Cache: ${cachePct}%"></div>
+                  <div style="width:${inPct}%; background:var(--sky); height:100%;" title="Input: ${inPct}%"></div>
+                  <div style="width:${outPct}%; background:var(--amber); height:100%;" title="Output: ${outPct}%"></div>
+                </div>
+                <span style="font-size:10px; color:var(--muted-foreground);">${barWidth}%</span>
+              </div>
+            </td>
+            <td class="text-right" style="color:var(--sky);">${formatNumber(it.input_tokens || 0)}</td>
+            <td class="text-right" style="color:var(--emerald);">${formatNumber(it.cache_tokens || 0)}</td>
+            <td class="text-right">
+              <span class="badge" style="background:rgba(16,185,129,0.12); color:var(--emerald); border-color:transparent; font-size:10px;">
+                ${(it.cache_ratio || 0).toFixed(1)}%
+              </span>
+            </td>
+            <td class="text-right" style="color:var(--amber);">${formatNumber(it.output_tokens || 0)}</td>
+            <td class="text-right" style="color:var(--foreground);">${(it.turn_count || 0).toLocaleString()}</td>
+            <td class="text-right" style="font-weight:700; color:var(--foreground);">${formatUSD(it.cost || 0)}</td>
+            <td class="text-right" style="color:var(--emerald);">${formatUSD(it.savings || 0)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function loadConsumption() {
+      try {
+        const res = await fetch('/api/consumption');
+        const data = await res.json();
+        renderConsumption(data);
+      } catch (err) {
+        console.error('Failed to load consumption summary', err);
+      }
+    }
+
     // --- Populate Step Ledger Table ---
     function populateTable(filterText = '') {
       const tbody = document.getElementById('stepTableBody');
@@ -1498,6 +1843,8 @@
         if (compB.options.length > 1) {
           compB.selectedIndex = 1;
         }
+
+        loadConsumption();
       } catch (err) {
         console.error('Failed to load sessions list', err);
       }
@@ -1552,6 +1899,9 @@
         renderMiniMap();
         renderDonut();
         updateVelocityUI(snap);
+        if (snap.consumption) {
+          renderConsumption(snap.consumption);
+        }
         populateTable(document.getElementById('tableSearchInput').value);
       } catch (err) {
         console.error('Failed to fetch session snapshot', err);
@@ -1637,6 +1987,9 @@
           renderMiniMap();
           renderDonut();
           renderVelocity();
+          if (snap.consumption) {
+            renderConsumption(snap.consumption);
+          }
           populateTable(document.getElementById('tableSearchInput').value);
         } catch (err) {
           console.error('Error parsing telemetry snapshot', err);
@@ -1807,6 +2160,26 @@
         addEventLog('Telemetry stream paused by user', 'SYS', 'tag-cli');
       }
     });
+
+    // Periodic Consumption Horizon Toggles
+    const viewDailyBtn = document.getElementById('viewDailyBreakdownBtn');
+    const viewMonthlyBtn = document.getElementById('viewMonthlyBreakdownBtn');
+
+    if (viewDailyBtn && viewMonthlyBtn) {
+      viewDailyBtn.addEventListener('click', () => {
+        currentConsumptionMode = 'daily';
+        viewDailyBtn.classList.add('active');
+        viewMonthlyBtn.classList.remove('active');
+        renderConsumptionTable();
+      });
+
+      viewMonthlyBtn.addEventListener('click', () => {
+        currentConsumptionMode = 'monthly';
+        viewMonthlyBtn.classList.add('active');
+        viewDailyBtn.classList.remove('active');
+        renderConsumptionTable();
+      });
+    }
 
     // --- Compare Modal Logic ---
     const compareModal = document.getElementById('compareModal');
