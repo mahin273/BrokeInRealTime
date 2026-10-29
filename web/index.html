@@ -1017,8 +1017,9 @@
       document.getElementById('kpiSavings').textContent = `Saved ${formatUSD(savings)} (Cache)`;
 
       if (latestSnapshot) {
-        if (latestSnapshot.session_title) {
-          document.getElementById('sessionTitleSub').textContent = latestSnapshot.session_title;
+        if (latestSnapshot.session_title && latestSnapshot.session_title !== 'Antigravity Session') {
+          const prefix = currentSelectedSession === 'active' ? '💬 Active Conversation:' : '📁 Archive Session:';
+          document.getElementById('sessionTitleSub').innerHTML = `<span style="color:var(--foreground); font-weight:600;">${prefix}</span> "${escapeHtml(latestSnapshot.session_title)}" <span style="color:var(--muted-foreground); margin-left:8px;">• Realtime token & cost telemetry</span>`;
         }
         if (latestSnapshot.all_time_tokens) {
           document.getElementById('kpiAllTimeText').textContent = `Machine Total: ${formatNumber(latestSnapshot.all_time_tokens)} (${latestSnapshot.total_sessions} sessions)`;
@@ -1870,6 +1871,11 @@
           statusBadge.className = isLiveActive ? 'badge badge-status' : 'badge badge-status paused';
         }
 
+        if (snap.session_title && snap.session_title !== 'Antigravity Session') {
+          const prefix = sessionId === 'active' ? '💬 Active Conversation:' : '📁 Archive Session:';
+          document.getElementById('sessionTitleSub').innerHTML = `<span style="color:var(--foreground); font-weight:600;">${prefix}</span> "${escapeHtml(snap.session_title)}" <span style="color:var(--muted-foreground); margin-left:8px;">• Realtime token & cost telemetry</span>`;
+        }
+
         if (snap.steps && snap.steps.length > 0) {
           steps = snap.steps.map(s => [
             s.step_index,
@@ -1937,8 +1943,8 @@
           latestSnapshot = snap;
 
           document.getElementById('sessionBadge').textContent = `Session: ${snap.session_id}`;
-          if (snap.session_title) {
-            document.getElementById('sessionTitleSub').textContent = snap.session_title;
+          if (snap.session_title && snap.session_title !== 'Antigravity Session') {
+            document.getElementById('sessionTitleSub').innerHTML = `<span style="color:var(--foreground); font-weight:600;">💬 Active Conversation:</span> "${escapeHtml(snap.session_title)}" <span style="color:var(--muted-foreground); margin-left:8px;">• Realtime token & cost telemetry</span>`;
           }
 
           updateVelocityUI(snap);
