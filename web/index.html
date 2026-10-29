@@ -564,10 +564,17 @@
       <div class="diag-card">
         <div class="diag-header">
           <div>
-            <h3 style="font-size:14px; font-weight:600;">Context Cache Donut</h3>
-            <p style="font-size:11px; color:var(--muted-foreground);">Prompt cache hit ratio distribution</p>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <h3 style="font-size:14px; font-weight:700;">Context Cache Donut</h3>
+              <span class="badge" style="background:rgba(16,185,129,0.15); color:var(--emerald); border-color:transparent; font-size:10px;" id="donutCenterPct">0%</span>
+            </div>
+            <p id="donutScopeSub" style="font-size:11px; color:var(--muted-foreground);">Active Turn Context</p>
           </div>
-          <span class="badge" style="background:rgba(16,185,129,0.15); color:var(--emerald); border-color:transparent;" id="donutCenterPct">0%</span>
+          <div class="btn-toggle-group" style="font-size:10px; padding:2px;">
+            <button id="donutModeActive" class="btn-toggle active" style="padding:2px 8px; font-size:10px;">Active</button>
+            <button id="donutModeWindow" class="btn-toggle" style="padding:2px 8px; font-size:10px;">Window</button>
+            <button id="donutModeSession" class="btn-toggle" style="padding:2px 8px; font-size:10px;">Total</button>
+          </div>
         </div>
 
         <div style="height:90px; width:100%; display:flex; justify-content:center; align-items:center;">
@@ -726,6 +733,7 @@
     let latestSnapshot = null;
     let currentSelectedSession = 'active';
     let allSessionsList = [];
+    let donutScope = 'active'; // 'active', 'window', 'session'
 
     // Pricing models ($ per 1,000,000 tokens)
     const PRICING = {
@@ -822,10 +830,6 @@
 
       document.getElementById('kpiEstCost').textContent = formatUSD(costReal);
       document.getElementById('kpiSavings').textContent = `Saved ${formatUSD(savings)} (Cache)`;
-      document.getElementById('donutCenterPct').textContent = cacheHitRatio.toFixed(1) + '%';
-      document.getElementById('donutCachedText').textContent = formatNumber(totalCache);
-      document.getElementById('donutInputText').textContent = formatNumber(totalInput);
-      document.getElementById('donutOutputText').textContent = formatNumber(totalOutput);
 
       if (latestSnapshot) {
         if (latestSnapshot.session_title) {
@@ -1167,8 +1171,90 @@
       miniMapCtx.fill();
     }
 
+    // --- Helper to get dynamic Donut tokens based on Scope or Hover ---
+    function getDonutTokens() {
+      if (steps.length === 0) {
+        return { cache: 0, input: 0, output: 0, ratio: 0, label: 'Awaiting steps' };
+      }
+
+      // If hovering on timeline canvas, preview hovered step dynamically
+      if (hoveredIndex >= 0) {
+        const sliceStart = Math.max(0, steps.length - visibleWindow);
+        const visibleData = steps.slice(sliceStart);
+        if (hoveredIndex < visibleData.length) {
+          const s = visibleData[hoveredIndex];
+          const prompt = s[2] + s[3];
+          const ratio = prompt > 0 ? (s[3] / prompt) * 100 : 0;
+          return {
+            cache: s[3],
+            input: s[2],
+            output: s[4],
+            ratio: ratio,
+            label: `Previewing Step #${s[0]}`
+          };
+        }
+      }
+
+      if (donutScope === 'active') {
+        const last = steps[steps.length - 1];
+        const prompt = last[2] + last[3];
+        const ratio = prompt > 0 ? (last[3] / prompt) * 100 : 0;
+        return {
+          cache: last[3],
+          input: last[2],
+          output: last[4],
+          ratio: ratio,
+          label: `Active Turn #${last[0]}`
+        };
+      }
+
+      if (donutScope === 'window') {
+        const sliceStart = Math.max(0, steps.length - visibleWindow);
+        const visibleData = steps.slice(sliceStart);
+        let c = 0, inp = 0, out = 0;
+        for (let s of visibleData) {
+          inp += s[2];
+          c += s[3];
+          out += s[4];
+        }
+        const prompt = inp + c;
+        const ratio = prompt > 0 ? (c / prompt) * 100 : 0;
+        return {
+          cache: c,
+          input: inp,
+          output: out,
+          ratio: ratio,
+          label: `Scrubber Window (${visibleData.length} turns)`
+        };
+      }
+
+      // 'session' cumulative total
+      let c = 0, inp = 0, out = 0;
+      for (let s of steps) {
+        inp += s[2];
+        c += s[3];
+        out += s[4];
+      }
+      const prompt = inp + c;
+      const ratio = prompt > 0 ? (c / prompt) * 100 : 0;
+      return {
+        cache: c,
+        input: inp,
+        output: out,
+        ratio: ratio,
+        label: `Session Total (${steps.length} turns)`
+      };
+    }
+
     // --- Context Cache Donut Chart ---
     function renderDonut() {
+      const data = getDonutTokens();
+      document.getElementById('donutCenterPct').textContent = data.ratio.toFixed(1) + '%';
+      document.getElementById('donutScopeSub').textContent = data.label;
+      document.getElementById('donutCachedText').textContent = formatNumber(data.cache);
+      document.getElementById('donutInputText').textContent = formatNumber(data.input);
+      document.getElementById('donutOutputText').textContent = formatNumber(data.output);
+
       const rect = donutCanvas.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
       donutCanvas.width = rect.width * dpr;
@@ -1180,18 +1266,12 @@
       const h = rect.height;
       const cx = w / 2;
       const cy = h / 2;
-      const radius = Math.min(w, h) / 2 - 6;
-      const innerRadius = radius - 12;
+      const radius = Math.min(w, h) / 2 - 4;
+      const innerRadius = radius - 13;
 
       donutCtx.clearRect(0, 0, w, h);
 
-      let totalIn = 0, totalCache = 0, totalOut = 0;
-      for (let s of steps) {
-        totalIn += s[2];
-        totalCache += s[3];
-        totalOut += s[4];
-      }
-      const sum = totalIn + totalCache + totalOut;
+      const sum = data.cache + data.input + data.output;
       if (sum === 0) {
         donutCtx.beginPath();
         donutCtx.arc(cx, cy, radius, 0, Math.PI * 2);
@@ -1202,13 +1282,14 @@
       }
 
       const segments = [
-        { val: totalCache, color: '#10b981' },
-        { val: totalIn, color: '#0ea5e9' },
-        { val: totalOut, color: '#f59e0b' }
+        { val: data.cache, color: '#10b981' },
+        { val: data.input, color: '#0ea5e9' },
+        { val: data.output, color: '#f59e0b' }
       ];
 
       let startAngle = -Math.PI / 2;
       for (let seg of segments) {
+        if (seg.val <= 0) continue;
         const sliceAngle = (seg.val / sum) * Math.PI * 2;
         donutCtx.beginPath();
         donutCtx.arc(cx, cy, radius, startAngle, startAngle + sliceAngle);
@@ -1218,6 +1299,13 @@
         donutCtx.fill();
         startAngle += sliceAngle;
       }
+
+      // Draw percentage in the donut center hole
+      donutCtx.fillStyle = '#ffffff';
+      donutCtx.font = 'bold 12px monospace';
+      donutCtx.textAlign = 'center';
+      donutCtx.textBaseline = 'middle';
+      donutCtx.fillText(data.ratio.toFixed(1) + '%', cx, cy);
     }
 
     // --- Velocity Oscillator Canvas ---
@@ -1559,10 +1647,12 @@
           }
         }
         renderMainChart();
+        renderDonut();
       } else {
         chartTooltip.style.display = 'none';
         hoveredIndex = -1;
         renderMainChart();
+        renderDonut();
       }
     });
 
@@ -1570,6 +1660,30 @@
       chartTooltip.style.display = 'none';
       hoveredIndex = -1;
       renderMainChart();
+      renderDonut();
+    });
+
+    // Donut Mode Toggle Handlers
+    document.getElementById('donutModeActive').addEventListener('click', () => {
+      donutScope = 'active';
+      document.getElementById('donutModeActive').className = 'btn-toggle active';
+      document.getElementById('donutModeWindow').className = 'btn-toggle';
+      document.getElementById('donutModeSession').className = 'btn-toggle';
+      renderDonut();
+    });
+    document.getElementById('donutModeWindow').addEventListener('click', () => {
+      donutScope = 'window';
+      document.getElementById('donutModeWindow').className = 'btn-toggle active';
+      document.getElementById('donutModeActive').className = 'btn-toggle';
+      document.getElementById('donutModeSession').className = 'btn-toggle';
+      renderDonut();
+    });
+    document.getElementById('donutModeSession').addEventListener('click', () => {
+      donutScope = 'session';
+      document.getElementById('donutModeSession').className = 'btn-toggle active';
+      document.getElementById('donutModeActive').className = 'btn-toggle';
+      document.getElementById('donutModeWindow').className = 'btn-toggle';
+      renderDonut();
     });
 
     // Scrubber Range
@@ -1578,6 +1692,7 @@
       visibleWindow = parseInt(e.target.value, 10);
       document.getElementById('scrubStartLabel').textContent = `Window: ${visibleWindow} steps`;
       renderMainChart();
+      if (donutScope === 'window') renderDonut();
     });
 
     document.getElementById('toggleCache').addEventListener('change', renderMainChart);
