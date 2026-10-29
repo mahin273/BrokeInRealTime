@@ -19,7 +19,7 @@ import (
 	"github.com/mahin273/BrokeInRealTime/internal/watcher"
 )
 
-const version = "1.2.0"
+const version = "1.2.1"
 
 func main() {
 	port := flag.Int("port", 8088, "Port to listen on (strictly bound to 127.0.0.1)")
