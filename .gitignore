@@ -1,0 +1,22 @@
+# Design documentation (kept local)
+Design_Doc.md
+
+# Binaries & build artifacts
+/bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/broke-daemon
+
+# Local state & caches
+.broke_state.json
+state.json
+*.log
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

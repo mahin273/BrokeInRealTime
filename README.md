@@ -1,0 +1,132 @@
+# BrokeInRealTime 💸
+
+**BrokeInRealTime** is an ultra-lightweight, zero-network-risk local telemetry daemon and real-time dashboard for **Google Antigravity (IDE App & `agy` CLI)**. It tracks token consumption, context caching efficiency, theoretical financial burn rate, and quota exhaustion in real time.
+
+---
+
+## ⚡ Key Highlights
+
+* **100% Offline & Local (`127.0.0.1`):** No cloud servers, no remote telemetry, no external databases. All data stays strictly on your workstation.
+* **Zero External Scraping:** Passively watches local Antigravity transcript logs and SQLite session tables. Never creates outbound network requests to Google or Gemini endpoints.
+* **Context Cache-Aware Accounting:** Distinguishes between fresh input tokens and discounted cached read tokens (`cache_read_tokens`), displaying true theoretical cost and prompt caching dollar savings.
+* **App vs. CLI Attribution:** Automatically identifies whether tokens originated in the Desktop IDE or the terminal CLI (`agy`) via native session metadata.
+* **Server Quota & Cooldown Tracker:** Intercepts HTTP 429 `RESOURCE_EXHAUSTED` events to display live cooldown countdown timers, alongside a customizable daily soft budget bar.
+* **Single Binary Footprint:** Compiled in Go to a self-contained executable ($< 9\text{ MB}$, $\approx 12\text{ MB}$ RSS memory, $\le 0.2\%$ idle CPU) embedding an offline, dependency-free HTML5 Canvas dashboard.
+
+---
+
+## 🚀 Quickstart
+
+### Prerequisites
+* [Go 1.22+](https://golang.org) (with standard C toolchain `gcc` for SQLite CGO driver).
+
+### Build from Source
+```bash
+git clone git@github.com:mahin273/BrokeInRealTime.git
+cd BrokeInRealTime
+
+# Build stripped binary
+go build -ldflags="-s -w" -o broke-daemon ./cmd/broke-daemon
+```
+
+### Run
+```bash
+./broke-daemon
+```
+
+Open your browser to:
+👉 **`http://127.0.0.1:8080`**
+
+### Command-Line Options
+```text
+Usage of ./broke-daemon:
+  --port int
+        Port to listen on (strictly bound to 127.0.0.1) (default 8080)
+  --antigravity-dir string
+        Path to Antigravity data dir (defaults to ~/.gemini/antigravity)
+  --config string
+        Path to custom pricing.json
+  --no-backfill
+        Do not backfill existing conversation history on launch
+  --version
+        Print version and exit
+```
+
+---
+
+## 🖥️ Background Service Setup
+
+### Linux (`systemd --user`)
+1. Copy the compiled binary to your local bin:
+   ```bash
+   install -m 755 broke-daemon ~/.local/bin/
+   ```
+2. Install and enable the systemd user service:
+   ```bash
+   mkdir -p ~/.config/systemd/user/
+   cp service/brokeinrealtime.service ~/.config/systemd/user/
+   systemctl --user daemon-reload
+   systemctl --user enable --now brokeinrealtime
+   ```
+3. Check status:
+   ```bash
+   systemctl --user status brokeinrealtime
+   ```
+
+### macOS (`launchd`)
+1. Copy the binary:
+   ```bash
+   sudo cp broke-daemon /usr/local/bin/
+   ```
+2. Copy the plist and start the agent:
+   ```bash
+   mkdir -p ~/Library/LaunchAgents/
+   cp service/com.user.brokeinrealtime.plist ~/Library/LaunchAgents/
+   launchctl load ~/Library/LaunchAgents/com.user.brokeinrealtime.plist
+   ```
+
+---
+
+## ⚙️ Pricing Configuration
+
+Model rates can be customized in `pricing.json` (or placed in `~/.config/brokeinrealtime/pricing.json`):
+
+```json
+{
+  "models": {
+    "gemini-3.8-flash": {
+      "input_per_million": 0.15,
+      "cache_per_million": 0.0375,
+      "output_per_million": 0.60
+    },
+    "gemini-3.8-pro": {
+      "input_per_million": 1.25,
+      "cache_per_million": 0.3125,
+      "output_per_million": 5.00,
+      "context_tiered": {
+        "threshold": 128000,
+        "high_input_per_million": 2.50,
+        "high_cache_per_million": 0.6250,
+        "high_output_per_million": 10.00
+      }
+    }
+  },
+  "budget": {
+    "daily_usd_limit": 10.00,
+    "daily_token_limit": 10000000
+  }
+}
+```
+
+---
+
+## 🔒 Security
+
+* **127.0.0.1 Binding:** Refuses external interfaces (`0.0.0.0`).
+* **Cross-Site WebSocket Hijacking (CSWSH) Protection:** Verifies the `Origin` header on WebSocket handshakes to block untrusted browser origins from reading token activity.
+* **Non-Blocking Read-Only Access:** All file handles are opened with `O_RDONLY` and shared locks.
+
+---
+
+## 📜 License
+MIT License.
