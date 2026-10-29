@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 	"github.com/mahin273/BrokeInRealTime/internal/aggregator"
 	"github.com/mahin273/BrokeInRealTime/internal/config"
 	"github.com/mahin273/BrokeInRealTime/internal/meta"
@@ -19,7 +19,7 @@ func TestWatcherLiveIngestion(t *testing.T) {
 	baseDir := t.TempDir()
 	dbPath := filepath.Join(baseDir, "conversation_summaries.db")
 
-	db, err := sql.Open("sqlite3", dbPath)
+	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		t.Fatalf("failed to open sqlite: %v", err)
 	}

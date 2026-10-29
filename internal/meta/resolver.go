@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 // SessionMeta holds metadata for a single Antigravity session.
@@ -69,7 +69,7 @@ func (r *Resolver) Refresh() error {
 	}
 
 	dsn := fmt.Sprintf("file:%s?mode=ro&_busy_timeout=2000", r.dbPath)
-	db, err := sql.Open("sqlite3", dsn)
+	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return err
 	}
