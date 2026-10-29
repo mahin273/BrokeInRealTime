@@ -1308,6 +1308,49 @@
       donutCtx.fillText(data.ratio.toFixed(1) + '%', cx, cy);
     }
 
+    // --- Velocity Diagnostics State & Formatter ---
+    function updateVelocityUI(snap) {
+      if (!snap) return;
+
+      if (snap.throughput_60s && snap.throughput_60s.length === 60) {
+        velocityData = snap.throughput_60s;
+      } else if (snap.steps && snap.steps.length > 0) {
+        // For archive sessions, generate a dynamic velocity profile from recent turns
+        const recentSteps = snap.steps.slice(-60);
+        velocityData = new Array(60).fill(0);
+        for (let i = 0; i < recentSteps.length; i++) {
+          const s = recentSteps[i];
+          velocityData[60 - recentSteps.length + i] = (s.input_tokens + s.cache_read_tokens + s.output_tokens);
+        }
+      }
+
+      const peakTok = Math.max(...velocityData, 0);
+      const recentBurst = velocityData.slice(-6).find(v => v > 0) || 0;
+      const rollingSpeed = snap.tokens_per_sec || 0;
+
+      const valEl = document.getElementById('currentVelocityVal');
+      const peakEl = document.getElementById('peakVelocityVal');
+
+      if (currentSelectedSession !== 'active') {
+        const avg = snap.step_count > 0 ? Math.round(snap.total_tokens / snap.step_count) : 0;
+        valEl.textContent = formatNumber(avg);
+        peakEl.textContent = `Archived • Avg ${formatNumber(avg)} tok/turn`;
+      } else if (recentBurst > 0) {
+        valEl.textContent = formatNumber(recentBurst);
+        peakEl.textContent = `Burst Active • Peak: ${formatNumber(peakTok)} tok/s`;
+      } else if (rollingSpeed > 0) {
+        valEl.textContent = formatNumber(Math.round(rollingSpeed));
+        peakEl.textContent = `60s Rolling • Peak: ${formatNumber(peakTok)} tok/s`;
+      } else {
+        const lastStep = steps[steps.length - 1];
+        const lastStepTok = lastStep ? (lastStep[2] + lastStep[3] + lastStep[4]) : 0;
+        valEl.textContent = '0';
+        peakEl.textContent = lastStepTok > 0 ? `Standby • Last Turn: ${formatNumber(lastStepTok)} tok` : 'Standby (Awaiting turns)';
+      }
+
+      renderVelocity();
+    }
+
     // --- Velocity Oscillator Canvas ---
     function renderVelocity() {
       const rect = velocityCanvas.getBoundingClientRect();
@@ -1508,6 +1551,7 @@
         renderMainChart();
         renderMiniMap();
         renderDonut();
+        updateVelocityUI(snap);
         populateTable(document.getElementById('tableSearchInput').value);
       } catch (err) {
         console.error('Failed to fetch session snapshot', err);
@@ -1547,13 +1591,7 @@
             document.getElementById('sessionTitleSub').textContent = snap.session_title;
           }
 
-          if (snap.throughput_60s && snap.throughput_60s.length === 60) {
-            velocityData = snap.throughput_60s;
-            const currentTok = velocityData[velocityData.length - 1] || 0;
-            const peakTok = Math.max(...velocityData, 0);
-            document.getElementById('currentVelocityVal').textContent = currentTok.toLocaleString();
-            document.getElementById('peakVelocityVal').textContent = `Peak: ${peakTok.toLocaleString()} tok/s`;
-          }
+          updateVelocityUI(snap);
 
           if (snap.steps && snap.steps.length > 0) {
             const prevLen = steps.length;
