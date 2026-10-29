@@ -298,10 +298,11 @@
       <!-- Total Tokens -->
       <div class="card-kpi">
         <div class="kpi-label-row">
-          <span>Total Tokens</span>
+          <span>Session Tokens</span>
         </div>
         <div class="kpi-value" id="kpiTotalTokens">0</div>
         <span class="kpi-sub" id="kpiStepCount">0 Recorded Steps</span>
+        <span style="font-size:10px; color:var(--muted-foreground); margin-top:2px;" id="kpiAllTimeText">Machine Total: 0</span>
       </div>
 
       <!-- Cache Read Tokens -->
@@ -694,6 +695,9 @@
       document.getElementById('donutOutputText').textContent = formatNumber(totalOutput);
 
       if (latestSnapshot) {
+        if (latestSnapshot.all_time_tokens) {
+          document.getElementById('kpiAllTimeText').textContent = `Machine Total: ${formatNumber(latestSnapshot.all_time_tokens)} (${latestSnapshot.total_sessions} sessions)`;
+        }
         document.getElementById('budgetUsedVal').textContent = formatUSD(latestSnapshot.budget_used_usd);
         document.getElementById('budgetLimitVal').textContent = `Cap: $ ${latestSnapshot.budget_limit_usd.toFixed(2)}`;
         document.getElementById('budgetPercentText').textContent = `${latestSnapshot.budget_percent.toFixed(1)}% used`;

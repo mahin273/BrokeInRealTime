@@ -53,14 +53,17 @@ func TestAggregatorIngestAndSnapshot(t *testing.T) {
 
 	snap := agg.Snapshot()
 
-	if snap.TotalTokens != 71500 {
-		t.Errorf("expected 71500 total tokens, got %d", snap.TotalTokens)
+	if snap.AllTimeTokens != 71500 {
+		t.Errorf("expected 71500 all time tokens, got %d", snap.AllTimeTokens)
 	}
-	if snap.TotalInput != 30000 {
-		t.Errorf("expected 30000 input tokens, got %d", snap.TotalInput)
+	if snap.AllTimeInput != 30000 {
+		t.Errorf("expected 30000 all time input tokens, got %d", snap.AllTimeInput)
 	}
-	if snap.TotalCached != 40000 {
-		t.Errorf("expected 40000 cached tokens, got %d", snap.TotalCached)
+	if snap.AllTimeCached != 40000 {
+		t.Errorf("expected 40000 all time cached tokens, got %d", snap.AllTimeCached)
+	}
+	if snap.TotalTokens != 20500 && snap.TotalTokens != 51000 {
+		t.Errorf("expected active session tokens, got %d", snap.TotalTokens)
 	}
 	if snap.CliTokens != 51000 {
 		t.Errorf("expected 51000 CLI tokens, got %d", snap.CliTokens)

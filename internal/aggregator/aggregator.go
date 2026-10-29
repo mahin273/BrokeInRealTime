@@ -28,11 +28,23 @@ type StepData struct {
 	ToolSummary     string `json:"tool_summary,omitempty"`
 }
 
+// SessionStats tracks totals for an individual conversation.
+type SessionStats struct {
+	InputTokens  int64
+	CacheTokens  int64
+	OutputTokens int64
+	TotalTokens  int64
+	TotalCost    float64
+	LastActivity time.Time
+}
+
 // TelemetrySnapshot is the JSON payload broadcasted to web clients.
 type TelemetrySnapshot struct {
 	Timestamp           int64                `json:"timestamp"`
 	SessionID           string               `json:"session_id"`
-	TotalTokens         int64                `json:"total_tokens"`
+	
+	// Active Session Scope (What is currently happening in active conversation)
+	TotalTokens         int64                `json:"total_tokens"` // Active session tokens
 	TotalInput          int64                `json:"total_input"`
 	TotalCached         int64                `json:"total_cached"`
 	TotalOutput         int64                `json:"total_output"`
@@ -42,6 +54,17 @@ type TelemetrySnapshot struct {
 	TotalCost           float64              `json:"total_cost"`
 	TotalRawCost        float64              `json:"total_raw_cost"`
 	TotalSavings        float64              `json:"total_savings"`
+	StepCount           int                  `json:"step_count"`
+	Steps               []StepData           `json:"steps"` // Sequential steps of active conversation
+
+	// Global Machine Scope (All conversations on this workstation)
+	AllTimeTokens       int64                `json:"all_time_tokens"`
+	AllTimeCost         float64              `json:"all_time_cost"`
+	AllTimeInput        int64                `json:"all_time_input"`
+	AllTimeCached       int64                `json:"all_time_cached"`
+	AllTimeOutput       int64                `json:"all_time_output"`
+	TotalSessions       int                  `json:"total_sessions"`
+
 	BurnRatePerHour     float64              `json:"burn_rate_per_hour"`
 	TokensPerSec        float64              `json:"tokens_per_sec"`
 	AppTokens           int64                `json:"app_tokens"`
@@ -55,8 +78,6 @@ type TelemetrySnapshot struct {
 	Quota               parser.QuotaCooldown `json:"quota"`
 	Throughput60s       []int64              `json:"throughput_60s"` // 60 values (tokens/sec)
 	RecentEvents        []parser.TokenEvent  `json:"recent_events"`  // Last 30 events
-	Steps               []StepData           `json:"steps"`          // Full step-by-step history
-	StepCount           int                  `json:"step_count"`
 }
 
 // Aggregator coordinates all telemetry accumulation and snapshot production.
@@ -65,16 +86,18 @@ type Aggregator struct {
 	cfg       *config.Config
 	startTime time.Time
 
-	sessionID string
+	activeSessionID string
+	latestEventTime time.Time
 
-	// Totals
-	totalInput  int64
-	totalCached int64
-	totalOutput int64
-	totalCost   float64
-	totalRaw    float64
-	totalSave   float64
+	// All-time Totals across all sessions on disk
+	globalInput  int64
+	globalCached int64
+	globalOutput int64
+	globalCost   float64
+	globalRaw    float64
+	globalSave   float64
 
+	// Source attribution totals
 	appTokens int64
 	cliTokens int64
 	appCost   float64
@@ -82,14 +105,15 @@ type Aggregator struct {
 
 	lastContextTokens int64
 
+	// Per-session tracking
+	sessionStats map[string]*SessionStats
+	sessionSteps map[string][]StepData
+
 	// Rolling window (last 60 seconds, keyed by unix second)
 	rollingSeconds map[int64]*TimePoint
 
 	// Recent events buffer (FIFO up to 50)
 	recentEvents []parser.TokenEvent
-
-	// Chronological step history (up to 2000 steps)
-	stepsHistory []StepData
 
 	// Quota status
 	quota parser.QuotaCooldown
@@ -100,9 +124,10 @@ func NewAggregator(cfg *config.Config) *Aggregator {
 	return &Aggregator{
 		cfg:            cfg,
 		startTime:      time.Now(),
+		sessionStats:   make(map[string]*SessionStats),
+		sessionSteps:   make(map[string][]StepData),
 		rollingSeconds: make(map[int64]*TimePoint),
 		recentEvents:   make([]parser.TokenEvent, 0, 50),
-		stepsHistory:   make([]StepData, 0, 2000),
 		quota: parser.QuotaCooldown{
 			Active: false,
 		},
@@ -114,15 +139,33 @@ func (a *Aggregator) IngestEvent(evt parser.TokenEvent) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	a.totalInput += evt.InputTokens
-	a.totalCached += evt.CacheReadTokens
-	a.totalOutput += evt.OutputTokens
-	a.totalCost += evt.IncrementalCost
-	a.totalRaw += evt.RawCost
-	a.totalSave += evt.CacheSavings
+	a.globalInput += evt.InputTokens
+	a.globalCached += evt.CacheReadTokens
+	a.globalOutput += evt.OutputTokens
+	a.globalCost += evt.IncrementalCost
+	a.globalRaw += evt.RawCost
+	a.globalSave += evt.CacheSavings
 
-	a.sessionID = evt.ConversationID
-	a.lastContextTokens = evt.InputTokens + evt.CacheReadTokens
+	// Per-session accumulation
+	convID := evt.ConversationID
+	ss, ok := a.sessionStats[convID]
+	if !ok {
+		ss = &SessionStats{}
+		a.sessionStats[convID] = ss
+	}
+	ss.InputTokens += evt.InputTokens
+	ss.CacheTokens += evt.CacheReadTokens
+	ss.OutputTokens += evt.OutputTokens
+	ss.TotalTokens += evt.TotalTokens
+	ss.TotalCost += evt.IncrementalCost
+	ss.LastActivity = evt.CreatedAt
+
+	// Mark active session as the conversation with the most recent event timestamp
+	if a.activeSessionID == "" || evt.CreatedAt.After(a.latestEventTime) {
+		a.activeSessionID = convID
+		a.latestEventTime = evt.CreatedAt
+		a.lastContextTokens = evt.InputTokens + evt.CacheReadTokens
+	}
 
 	if evt.OriginSource == "CLI" {
 		a.cliTokens += evt.TotalTokens
@@ -147,7 +190,7 @@ func (a *Aggregator) IngestEvent(evt parser.TokenEvent) {
 		a.recentEvents = a.recentEvents[:30]
 	}
 
-	// Append to chronological steps history (up to 2000)
+	// Append to this session's step history (up to 1500 per session)
 	stepItem := StepData{
 		StepIndex:       evt.StepIndex,
 		TimeStr:         evt.CreatedAt.Format("15:04:05"),
@@ -159,10 +202,12 @@ func (a *Aggregator) IngestEvent(evt parser.TokenEvent) {
 		Model:           evt.Model,
 		ToolSummary:     evt.ToolSummary,
 	}
-	a.stepsHistory = append(a.stepsHistory, stepItem)
-	if len(a.stepsHistory) > 2000 {
-		a.stepsHistory = a.stepsHistory[len(a.stepsHistory)-2000:]
+	stepsList := a.sessionSteps[convID]
+	stepsList = append(stepsList, stepItem)
+	if len(stepsList) > 1500 {
+		stepsList = stepsList[len(stepsList)-1500:]
 	}
+	a.sessionSteps[convID] = stepsList
 }
 
 // UpdateQuota sets or updates the quota cooldown status.
@@ -172,7 +217,13 @@ func (a *Aggregator) UpdateQuota(qc *parser.QuotaCooldown) {
 	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	a.quota = *qc
+	// Only set active if expiresAt is in the future
+	if time.Now().Before(qc.ExpiresAt) {
+		a.quota = *qc
+	} else {
+		a.quota.Active = false
+		a.quota.Message = ""
+	}
 }
 
 // CleanupRollingWindow removes points older than 60 seconds.
@@ -222,23 +273,52 @@ func (a *Aggregator) Snapshot() TelemetrySnapshot {
 	tokensPerSec := float64(rollingTokens60s) / 60.0
 	burnRatePerHour := rollingCost60s * 60.0 // 60s * 60 = 1 hour
 
-	totalTokens := a.totalInput + a.totalCached + a.totalOutput
-	cacheRatio := 0.0
-	totalPrompt := a.totalInput + a.totalCached
-	if totalPrompt > 0 {
-		cacheRatio = (float64(a.totalCached) / float64(totalPrompt)) * 100.0
+	// Resolve Active Session stats
+	var activeStats *SessionStats
+	if a.activeSessionID != "" {
+		activeStats = a.sessionStats[a.activeSessionID]
 	}
 
+	var sessionTokens, sessionIn, sessionCache, sessionOut int64
+	var sessionCost, sessionRaw, sessionSave, sessionCacheRatio float64
+
+	if activeStats != nil {
+		sessionTokens = activeStats.TotalTokens
+		sessionIn = activeStats.InputTokens
+		sessionCache = activeStats.CacheTokens
+		sessionOut = activeStats.OutputTokens
+		sessionCost = activeStats.TotalCost
+		totalPrompt := sessionIn + sessionCache
+		if totalPrompt > 0 {
+			sessionCacheRatio = (float64(sessionCache) / float64(totalPrompt)) * 100.0
+		}
+		sessionCost, sessionRaw, sessionSave = a.cfg.CalculateCost("gemini-3.8-flash", sessionIn, sessionCache, sessionOut)
+	} else {
+		// Fallback to global totals if no session selected
+		sessionTokens = a.globalInput + a.globalCached + a.globalOutput
+		sessionIn = a.globalInput
+		sessionCache = a.globalCached
+		sessionOut = a.globalOutput
+		sessionCost = a.globalCost
+		sessionRaw = a.globalRaw
+		sessionSave = a.globalSave
+		totalPrompt := sessionIn + sessionCache
+		if totalPrompt > 0 {
+			sessionCacheRatio = (float64(sessionCache) / float64(totalPrompt)) * 100.0
+		}
+	}
+
+	allTimeTotalTokens := a.globalInput + a.globalCached + a.globalOutput
 	appPercent := 0.0
 	cliPercent := 0.0
-	if totalTokens > 0 {
-		appPercent = (float64(a.appTokens) / float64(totalTokens)) * 100.0
-		cliPercent = (float64(a.cliTokens) / float64(totalTokens)) * 100.0
+	if allTimeTotalTokens > 0 {
+		appPercent = (float64(a.appTokens) / float64(allTimeTotalTokens)) * 100.0
+		cliPercent = (float64(a.cliTokens) / float64(allTimeTotalTokens)) * 100.0
 	}
 
-	// Budget calculation
+	// Budget calculation based on current session
 	budgetLimit := a.cfg.Budget.DailyUSDLimit
-	budgetUsed := a.totalCost
+	budgetUsed := sessionCost
 	budgetPercent := 0.0
 	if budgetLimit > 0 {
 		budgetPercent = (budgetUsed / budgetLimit) * 100.0
@@ -254,10 +334,15 @@ func (a *Aggregator) Snapshot() TelemetrySnapshot {
 	eventsCopy := make([]parser.TokenEvent, len(a.recentEvents))
 	copy(eventsCopy, a.recentEvents)
 
-	stepsCopy := make([]StepData, len(a.stepsHistory))
-	copy(stepsCopy, a.stepsHistory)
+	// Clean steps array for active session
+	var stepsCopy []StepData
+	if a.activeSessionID != "" {
+		activeList := a.sessionSteps[a.activeSessionID]
+		stepsCopy = make([]StepData, len(activeList))
+		copy(stepsCopy, activeList)
+	}
 
-	sessionShort := a.sessionID
+	sessionShort := a.activeSessionID
 	if len(sessionShort) > 8 {
 		sessionShort = sessionShort[:8]
 	}
@@ -270,16 +355,24 @@ func (a *Aggregator) Snapshot() TelemetrySnapshot {
 	return TelemetrySnapshot{
 		Timestamp:           nowSec,
 		SessionID:           sessionShort,
-		TotalTokens:         totalTokens,
-		TotalInput:          a.totalInput,
-		TotalCached:         a.totalCached,
-		TotalOutput:         a.totalOutput,
-		CacheRatio:          cacheRatio,
+		TotalTokens:         sessionTokens,
+		TotalInput:          sessionIn,
+		TotalCached:         sessionCache,
+		TotalOutput:         sessionOut,
+		CacheRatio:          sessionCacheRatio,
 		ActiveContextTokens: a.lastContextTokens,
 		ContextPct:          contextPct,
-		TotalCost:           a.totalCost,
-		TotalRawCost:        a.totalRaw,
-		TotalSavings:        a.totalSave,
+		TotalCost:           sessionCost,
+		TotalRawCost:        sessionRaw,
+		TotalSavings:        sessionSave,
+		StepCount:           len(stepsCopy),
+		Steps:               stepsCopy,
+		AllTimeTokens:       allTimeTotalTokens,
+		AllTimeCost:         a.globalCost,
+		AllTimeInput:        a.globalInput,
+		AllTimeCached:       a.globalCached,
+		AllTimeOutput:       a.globalOutput,
+		TotalSessions:       len(a.sessionStats),
 		BurnRatePerHour:     burnRatePerHour,
 		TokensPerSec:        tokensPerSec,
 		AppTokens:           a.appTokens,
@@ -293,7 +386,5 @@ func (a *Aggregator) Snapshot() TelemetrySnapshot {
 		Quota:               a.quota,
 		Throughput60s:       throughput,
 		RecentEvents:        eventsCopy,
-		Steps:               stepsCopy,
-		StepCount:           len(stepsCopy),
 	}
 }

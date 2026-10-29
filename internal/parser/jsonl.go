@@ -114,18 +114,30 @@ func ParseIncremental(cursor *FileCursor, cfg *config.Config) (*ParseResult, err
 			if len(line) > 0 {
 				var raw RawStepRecord
 				if jsonErr := json.Unmarshal([]byte(line), &raw); jsonErr == nil {
-					// Check for Quota exhaustion
-					if strings.Contains(raw.Content, "RESOURCE_EXHAUSTED (code 429)") {
+					createdAt := time.Now()
+					if raw.CreatedAt != "" {
+						if t, parseErr := time.Parse(time.RFC3339Nano, raw.CreatedAt); parseErr == nil {
+							createdAt = t
+						} else if t, parseErr := time.Parse(time.RFC3339, raw.CreatedAt); parseErr == nil {
+							createdAt = t
+						}
+					}
+
+					// Check for Quota exhaustion (strictly from real SYSTEM error messages, not tool outputs)
+					if raw.Source == "SYSTEM" && raw.Type == "SYSTEM_MESSAGE" && strings.Contains(raw.Content, "RESOURCE_EXHAUSTED (code 429)") {
 						if match := quotaRegex.FindStringSubmatch(raw.Content); len(match) > 1 {
 							resetStr := match[1]
 							duration := ParseResetDuration(resetStr)
-							now := time.Now()
-							result.Cooling = &QuotaCooldown{
-								Active:        true,
-								ResetDuration: resetStr,
-								TriggeredAt:   now,
-								ExpiresAt:     now.Add(duration),
-								Message:       fmt.Sprintf("Quota exhausted (code 429). Resets in %s", resetStr),
+							expiresAt := createdAt.Add(duration)
+							// Only activate if the quota cooldown hasn't expired yet in real time
+							if time.Now().Before(expiresAt) {
+								result.Cooling = &QuotaCooldown{
+									Active:        true,
+									ResetDuration: resetStr,
+									TriggeredAt:   createdAt,
+									ExpiresAt:     expiresAt,
+									Message:       fmt.Sprintf("Quota exhausted (code 429). Resets in %s", resetStr),
+								}
 							}
 						}
 					}
@@ -133,14 +145,6 @@ func ParseIncremental(cursor *FileCursor, cfg *config.Config) (*ParseResult, err
 					// Check for Model token event
 					totalTokens := raw.InputTokens + raw.CacheReadTokens + raw.OutputTokens
 					if raw.Source == "MODEL" && totalTokens > 0 {
-						createdAt := time.Now()
-						if raw.CreatedAt != "" {
-							if t, parseErr := time.Parse(time.RFC3339Nano, raw.CreatedAt); parseErr == nil {
-								createdAt = t
-							} else if t, parseErr := time.Parse(time.RFC3339, raw.CreatedAt); parseErr == nil {
-								createdAt = t
-							}
-						}
 
 						modelName := raw.Model
 						if modelName == "" {
