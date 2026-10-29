@@ -43,7 +43,7 @@ func main() {
 	log.Printf("[Config] Target Antigravity directory: %s", baseDir)
 
 	cfg := config.LoadConfig(*configPath)
-	log.Printf("[Config] Loaded pricing matrix with %d models. Soft budget cap: $%.2f", len(cfg.Models), cfg.Budget.DailyUSDLimit)
+	log.Printf("[Config] Loaded pricing matrix with %d models.", len(cfg.Models))
 
 	dbPath := filepath.Join(baseDir, "conversation_summaries.db")
 	resolver := meta.NewResolver(dbPath)

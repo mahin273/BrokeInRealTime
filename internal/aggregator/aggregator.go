@@ -71,10 +71,6 @@ type TelemetrySnapshot struct {
 	CliTokens           int64                `json:"cli_tokens"`
 	AppPercent          float64              `json:"app_percent"`
 	CliPercent          float64              `json:"cli_percent"`
-	BudgetLimitUSD      float64              `json:"budget_limit_usd"`
-	BudgetUsedUSD       float64              `json:"budget_used_usd"`
-	BudgetPercent       float64              `json:"budget_percent"`
-	ProjectedEODUSD     float64              `json:"projected_eod_usd"`
 	Quota               parser.QuotaCooldown `json:"quota"`
 	Throughput60s       []int64              `json:"throughput_60s"` // 60 values (tokens/sec)
 	RecentEvents        []parser.TokenEvent  `json:"recent_events"`  // Last 30 events
@@ -316,21 +312,6 @@ func (a *Aggregator) Snapshot() TelemetrySnapshot {
 		cliPercent = (float64(a.cliTokens) / float64(allTimeTotalTokens)) * 100.0
 	}
 
-	// Budget calculation based on current session
-	budgetLimit := a.cfg.Budget.DailyUSDLimit
-	budgetUsed := sessionCost
-	budgetPercent := 0.0
-	if budgetLimit > 0 {
-		budgetPercent = (budgetUsed / budgetLimit) * 100.0
-	}
-
-	projectedEOD := budgetUsed
-	elapsedHours := now.Sub(a.startTime).Hours()
-	if elapsedHours > 0.05 {
-		hourlyAvg := budgetUsed / elapsedHours
-		projectedEOD = hourlyAvg * 8.0
-	}
-
 	eventsCopy := make([]parser.TokenEvent, len(a.recentEvents))
 	copy(eventsCopy, a.recentEvents)
 
@@ -379,10 +360,6 @@ func (a *Aggregator) Snapshot() TelemetrySnapshot {
 		CliTokens:           a.cliTokens,
 		AppPercent:          appPercent,
 		CliPercent:          cliPercent,
-		BudgetLimitUSD:      budgetLimit,
-		BudgetUsedUSD:       budgetUsed,
-		BudgetPercent:       budgetPercent,
-		ProjectedEODUSD:     projectedEOD,
 		Quota:               a.quota,
 		Throughput60s:       throughput,
 		RecentEvents:        eventsCopy,

@@ -31,9 +31,5 @@
       "cache_per_million": 0.0375,
       "output_per_million": 0.60
     }
-  },
-  "budget": {
-    "daily_usd_limit": 10.00,
-    "daily_token_limit": 10000000
   }
 }

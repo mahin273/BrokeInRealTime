@@ -261,6 +261,7 @@
           </div>
           <h1 class="header-title">BrokeInRealTime — Token Telemetry</h1>
           <span class="badge" id="sessionBadge">Session: standby</span>
+          <span class="badge" id="quotaBadge" style="color:var(--emerald);">Quota: Normal</span>
           <span id="statusBadge" class="badge badge-status">REALTIME ACTIVE</span>
         </div>
         <p style="font-size: 12px; color: var(--muted-foreground); margin-top: 4px;">
@@ -347,43 +348,25 @@
       <div class="card-kpi">
         <div class="kpi-label-row">
           <span>Est. Cost (Net)</span>
+          <span style="color:#fff; font-weight:700; font-family:monospace; font-size:11px;" id="burnVelocityVal">$ 0.00/hr</span>
         </div>
         <div class="kpi-value" id="kpiEstCost">$ 0.00</div>
         <span class="kpi-sub" style="color:var(--emerald);" id="kpiSavings">Saved $ 0.00 (Cache)</span>
+        <span style="font-size:10px; color:var(--muted-foreground); margin-top:2px;" id="kpiAllTimeCostText">Machine Total: $ 0.00</span>
       </div>
     </section>
 
-    <!-- Budget & Quota Bar -->
-    <section class="budget-quota-grid">
-      <div class="card-kpi">
-        <div class="kpi-label-row">
-          <span>Daily Budget Soft Cap</span>
-          <span id="budgetLimitVal" style="color:var(--muted-foreground);">Cap: $ 10.00</span>
-        </div>
-        <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:2px;">
-          <span style="font-size:20px; font-weight:800; font-family:monospace;" id="budgetUsedVal">$ 0.00</span>
-          <span style="font-size:11px; color:var(--muted-foreground);" id="budgetPercentText">0.0% used</span>
-        </div>
-        <div class="progress-bar-bg">
-          <div id="budgetBar" class="progress-bar-fill"></div>
-        </div>
-        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--muted-foreground);">
-          <span>Burn Velocity: <b id="burnVelocityVal" style="color:#fff;">$ 0.00/hr</b></span>
-          <span>Projected EOD: <b id="projectedEODVal" style="color:#fff;">$ 0.00</b></span>
+    <!-- Quota 429 Alert Banner (Hidden by default, displayed only when active 429 cooldown is running) -->
+    <div id="quotaAlertBanner" style="display:none; padding:12px 18px; border-radius:10px; background:rgba(244,63,94,0.12); border:1px solid rgba(244,63,94,0.3); align-items:center; justify-content:space-between; margin-bottom: 4px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:20px;">⚠️</span>
+        <div>
+          <div style="font-weight:700; color:var(--rose);">RESOURCE_EXHAUSTED (HTTP 429)</div>
+          <div style="font-size:12px; color:var(--muted-foreground);" id="quotaAlertMsg">Server quota limit reached. Cooldown timer active.</div>
         </div>
       </div>
-
-      <div class="card-kpi">
-        <div class="kpi-label-row">
-          <span>Server Quota Status</span>
-          <span id="quotaSubBadge" class="badge">HTTP 429 Sentinel</span>
-        </div>
-        <div id="quotaBox" class="quota-box">
-          <div style="font-weight:700; font-size:13px;" id="quotaTitle">NORMAL (No Throttling)</div>
-          <div style="font-size:11px; color:var(--muted-foreground); margin-top:2px;" id="quotaSub">Passively tracking HTTP 429 RESOURCE_EXHAUSTED errors</div>
-        </div>
-      </div>
-    </section>
+      <span class="badge" style="background:var(--rose); color:#fff; font-weight:700; padding:4px 10px;" id="quotaTimerBadge">Resets in --</span>
+    </div>
 
     <!-- Main Chart Section: Token Dynamics Over Steps -->
     <section class="chart-section">
@@ -698,39 +681,33 @@
         if (latestSnapshot.all_time_tokens) {
           document.getElementById('kpiAllTimeText').textContent = `Machine Total: ${formatNumber(latestSnapshot.all_time_tokens)} (${latestSnapshot.total_sessions} sessions)`;
         }
-        document.getElementById('budgetUsedVal').textContent = formatUSD(latestSnapshot.budget_used_usd);
-        document.getElementById('budgetLimitVal').textContent = `Cap: $ ${latestSnapshot.budget_limit_usd.toFixed(2)}`;
-        document.getElementById('budgetPercentText').textContent = `${latestSnapshot.budget_percent.toFixed(1)}% used`;
+        if (latestSnapshot.all_time_cost) {
+          document.getElementById('kpiAllTimeCostText').textContent = `Machine Total: ${formatUSD(latestSnapshot.all_time_cost)}`;
+        }
         document.getElementById('burnVelocityVal').textContent = `$ ${latestSnapshot.burn_rate_per_hour.toFixed(2)}/hr`;
-        document.getElementById('projectedEODVal').textContent = formatUSD(latestSnapshot.projected_eod_usd);
 
-        const bar = document.getElementById('budgetBar');
-        const pct = Math.min(latestSnapshot.budget_percent, 100);
-        bar.style.width = pct + '%';
-        if (pct > 85) bar.className = 'progress-bar-fill danger';
-        else if (pct > 65) bar.className = 'progress-bar-fill warning';
-        else bar.className = 'progress-bar-fill';
-
-        // Quota
-        const qBox = document.getElementById('quotaBox');
-        const qTitle = document.getElementById('quotaTitle');
-        const qSub = document.getElementById('quotaSub');
-        const qSubBadge = document.getElementById('quotaSubBadge');
+        // Quota Sentinel
+        const qBadge = document.getElementById('quotaBadge');
+        const qBanner = document.getElementById('quotaAlertBanner');
+        const qMsg = document.getElementById('quotaAlertMsg');
+        const qTimer = document.getElementById('quotaTimerBadge');
 
         if (latestSnapshot.quota && latestSnapshot.quota.active) {
-          qBox.className = 'quota-box throttled';
-          qTitle.textContent = 'RESOURCE_EXHAUSTED (HTTP 429)';
-          qTitle.style.color = 'var(--rose)';
-          qSub.textContent = latestSnapshot.quota.message || `Cooldown active. Resets in ${latestSnapshot.quota.reset_duration}`;
-          qSubBadge.textContent = 'COOLDOWN ACTIVE';
-          qSubBadge.style.color = 'var(--rose)';
+          qBadge.textContent = 'Quota: 429 Throttled';
+          qBadge.style.color = 'var(--rose)';
+          qBadge.style.borderColor = 'rgba(244,63,94,0.4)';
+          qBadge.style.background = 'rgba(244,63,94,0.15)';
+
+          qBanner.style.display = 'flex';
+          qMsg.textContent = latestSnapshot.quota.message || 'Server quota exhaustion active. Requests cooling down.';
+          qTimer.textContent = `Resets in ${latestSnapshot.quota.reset_duration || '--'}`;
         } else {
-          qBox.className = 'quota-box';
-          qTitle.textContent = 'NORMAL (No Throttling)';
-          qTitle.style.color = '#fff';
-          qSub.textContent = 'Passively tracking HTTP 429 RESOURCE_EXHAUSTED errors';
-          qSubBadge.textContent = 'HTTP 429 Sentinel';
-          qSubBadge.style.color = 'var(--muted-foreground)';
+          qBadge.textContent = 'Quota: Normal';
+          qBadge.style.color = 'var(--emerald)';
+          qBadge.style.borderColor = 'transparent';
+          qBadge.style.background = 'var(--card)';
+
+          qBanner.style.display = 'none';
         }
       }
     }

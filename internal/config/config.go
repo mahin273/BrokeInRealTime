@@ -23,16 +23,9 @@ type ModelRate struct {
 	ContextTiered     *TieredRate `json:"context_tiered,omitempty"`
 }
 
-// BudgetConfig defines user-configured soft caps.
-type BudgetConfig struct {
-	DailyUSDLimit   float64 `json:"daily_usd_limit"`
-	DailyTokenLimit int64   `json:"daily_token_limit"`
-}
-
 // Config is the full configuration object.
 type Config struct {
 	Models map[string]ModelRate `json:"models"`
-	Budget BudgetConfig         `json:"budget"`
 }
 
 // DefaultConfig returns default fallback pricing.
@@ -71,10 +64,6 @@ func DefaultConfig() *Config {
 				OutputPerMillion: 0.60,
 			},
 		},
-		Budget: BudgetConfig{
-			DailyUSDLimit:   10.00,
-			DailyTokenLimit: 10000000,
-		},
 	}
 }
 
@@ -104,12 +93,6 @@ func LoadConfig(customPath string) *Config {
 					for k, v := range loaded.Models {
 						cfg.Models[strings.ToLower(k)] = v
 					}
-				}
-				if loaded.Budget.DailyUSDLimit > 0 {
-					cfg.Budget.DailyUSDLimit = loaded.Budget.DailyUSDLimit
-				}
-				if loaded.Budget.DailyTokenLimit > 0 {
-					cfg.Budget.DailyTokenLimit = loaded.Budget.DailyTokenLimit
 				}
 				break
 			}
