@@ -22,7 +22,7 @@ import (
 const version = "1.2.0"
 
 func main() {
-	port := flag.Int("port", 8080, "Port to listen on (strictly bound to 127.0.0.1)")
+	port := flag.Int("port", 8088, "Port to listen on (strictly bound to 127.0.0.1)")
 	antigravityDir := flag.String("antigravity-dir", "", "Path to Antigravity data dir (defaults to ~/.gemini/antigravity)")
 	configPath := flag.String("config", "", "Path to custom pricing.json")
 	noBackfill := flag.Bool("no-backfill", false, "Do not backfill existing conversation history on launch")

@@ -7,7 +7,7 @@ Type=simple
 ExecStart=%h/.local/bin/broke-daemon --port 8088
 Restart=always
 RestartSec=5s
-Environment=PATH=/usr/bin:/usr/local/bin
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin
 
 # Hardening / Sandboxing
 PrivateTmp=true

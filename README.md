@@ -15,7 +15,34 @@
 
 ---
 
-##  Quickstart
+## ⚡ One-Command Install (Recommended)
+
+Run this single command in your terminal to install and start BrokeInRealTime automatically:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mahin273/BrokeInRealTime/main/install.sh | bash
+```
+
+Or using `wget`:
+```bash
+wget -qO- https://raw.githubusercontent.com/mahin273/BrokeInRealTime/main/install.sh | bash
+```
+
+The installer will:
+1. Detect your platform (Linux or macOS, amd64 or arm64).
+2. Install the lightweight binary to `~/.local/bin/broke-daemon`.
+3. Configure and start the user background service (`systemd --user` on Linux, `launchd` on macOS).
+4. Launch the real-time telemetry dashboard immediately at:
+   👉 **`http://127.0.0.1:8088`**
+
+#### Uninstall Anytime
+```bash
+curl -fsSL https://raw.githubusercontent.com/mahin273/BrokeInRealTime/main/install.sh | bash -s -- --uninstall
+```
+
+---
+
+## 🛠️ Manual Build & Quickstart
 
 ### Prerequisites
 * [Go 1.22+](https://golang.org) (with standard C toolchain `gcc` for SQLite CGO driver).
@@ -35,13 +62,13 @@ go build -ldflags="-s -w" -o broke-daemon ./cmd/broke-daemon
 ```
 
 Open your browser to:
- **`http://127.0.0.1:8080`**
+ **`http://127.0.0.1:8088`**
 
 ### Command-Line Options
 ```text
 Usage of ./broke-daemon:
   --port int
-        Port to listen on (strictly bound to 127.0.0.1) (default 8080)
+        Port to listen on (strictly bound to 127.0.0.1) (default 8088)
   --antigravity-dir string
         Path to Antigravity data dir (defaults to ~/.gemini/antigravity)
   --config string
