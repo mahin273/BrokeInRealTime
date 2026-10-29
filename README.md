@@ -58,16 +58,25 @@ curl -fsSL https://raw.githubusercontent.com/mahin273/BrokeInRealTime/main/insta
 Both methods automatically verify the latest GitHub release, download the precompiled binary, update `~/.local/bin/broke-daemon`, and restart the background daemon service seamlessly.
 
 #### Uninstall Anytime
+
+**Option 1: Built-in CLI command**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/mahin273/BrokeInRealTime/main/install.sh | bash -s -- --uninstall
+broke-daemon uninstall
 ```
+
+**Option 2: One-line uninstaller**
+```bash
+curl -fsSL https://raw.githubusercontent.com/mahin273/BrokeInRealTime/main/uninstall.sh | bash
+```
+
+Both methods cleanly terminate and disable background services (`systemd --user` or `launchd`), remove service definition files, and delete the executable.
 
 ---
 
 ## Manual Build & Quickstart
 
 ### Prerequisites
-* [Go 1.22+](https://golang.org) (with standard C toolchain `gcc` for SQLite CGO driver).
+* [Go 1.22+](https://golang.org) (Pure Go, 100% CGO-free, zero C compiler required).
 
 ### Build from Source
 ```bash
@@ -101,6 +110,8 @@ Usage of ./broke-daemon:
         Check GitHub for updates and self-update daemon to latest release
   --force
         Force reinstall of latest release even if version matches
+  --uninstall
+        Cleanly uninstall daemon, stop and remove background service
   --version
         Print version and exit
 ```

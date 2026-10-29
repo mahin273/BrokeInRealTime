@@ -234,3 +234,50 @@ func CheckAndApplyUpdate(currentVersion string, force bool) error {
 	fmt.Printf("[Update] Successfully updated BrokeInRealTime to %s!\n", latestTag)
 	return nil
 }
+
+// Uninstall stops background services, removes service definitions, and deletes the executable.
+func Uninstall() error {
+	fmt.Println("[Uninstall] Removing BrokeInRealTime...")
+
+	if runtime.GOOS == "linux" {
+		if exec.Command("systemctl", "--user", "is-active", "--quiet", "brokeinrealtime").Run() == nil {
+			fmt.Println("[Uninstall] Stopping systemd service...")
+			_ = exec.Command("systemctl", "--user", "stop", "brokeinrealtime").Run()
+		}
+		_ = exec.Command("systemctl", "--user", "disable", "brokeinrealtime").Run()
+
+		home, err := os.UserHomeDir()
+		if err == nil {
+			serviceFile := filepath.Join(home, ".config/systemd/user/brokeinrealtime.service")
+			if err := os.Remove(serviceFile); err == nil {
+				fmt.Printf("[Uninstall] Removed %s\n", serviceFile)
+			}
+			_ = exec.Command("systemctl", "--user", "daemon-reload").Run()
+		}
+	} else if runtime.GOOS == "darwin" {
+		home, err := os.UserHomeDir()
+		if err == nil {
+			plist := filepath.Join(home, "Library/LaunchAgents/com.user.brokeinrealtime.plist")
+			_ = exec.Command("launchctl", "unload", plist).Run()
+			if err := os.Remove(plist); err == nil {
+				fmt.Printf("[Uninstall] Removed %s\n", plist)
+			}
+		}
+	}
+
+	execPath, err := os.Executable()
+	if err == nil {
+		resolved, err := filepath.EvalSymlinks(execPath)
+		if err == nil {
+			execPath = resolved
+		}
+		if err := os.Remove(execPath); err == nil {
+			fmt.Printf("[Uninstall] Removed binary: %s\n", execPath)
+		} else {
+			fmt.Printf("[Uninstall] Note: could not remove %s: %v\n", execPath, err)
+		}
+	}
+
+	fmt.Println("[Uninstall] BrokeInRealTime has been completely and cleanly uninstalled.")
+	return nil
+}

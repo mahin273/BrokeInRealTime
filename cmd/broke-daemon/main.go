@@ -30,18 +30,30 @@ func main() {
 	showVersion := flag.Bool("version", false, "Print version and exit")
 	doUpdate := flag.Bool("update", false, "Check for updates and update daemon to the latest release")
 	forceUpdate := flag.Bool("force", false, "Force reinstall of latest release even if version matches")
+	doUninstall := flag.Bool("uninstall", false, "Cleanly uninstall daemon and remove background service")
 
-	// Support 'broke-daemon update' subcommand syntax
-	if len(os.Args) > 1 && os.Args[1] == "update" {
-		*doUpdate = true
-		// Remove 'update' from os.Args so flag.Parse can parse remaining flags like --force
-		os.Args = append(os.Args[:1], os.Args[2:]...)
+	// Support 'broke-daemon update' and 'broke-daemon uninstall' subcommand syntax
+	if len(os.Args) > 1 {
+		if os.Args[1] == "update" {
+			*doUpdate = true
+			os.Args = append(os.Args[:1], os.Args[2:]...)
+		} else if os.Args[1] == "uninstall" {
+			*doUninstall = true
+			os.Args = append(os.Args[:1], os.Args[2:]...)
+		}
 	}
 
 	flag.Parse()
 
 	if *showVersion {
 		fmt.Printf("BrokeInRealTime daemon v%s (Antigravity Telemetry)\n", version)
+		os.Exit(0)
+	}
+
+	if *doUninstall {
+		if err := updater.Uninstall(); err != nil {
+			log.Fatalf("[Error] Uninstall failed: %v", err)
+		}
 		os.Exit(0)
 	}
 

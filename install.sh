@@ -374,5 +374,5 @@ if [[ "${OS}" == "linux" && "${NO_SERVICE}" == "false" ]]; then
   echo -e "  Restart:           systemctl --user restart brokeinrealtime"
 fi
 echo -e "  Check Update:      broke-daemon --update"
-echo -e "  Uninstall:         curl -fsSL https://raw.githubusercontent.com/${REPO}/main/install.sh | bash -s -- --uninstall"
+echo -e "  Uninstall:         broke-daemon uninstall  (or curl -fsSL https://raw.githubusercontent.com/${REPO}/main/uninstall.sh | bash)"
 echo ""
