@@ -40,6 +40,17 @@ func TestServerEndpoints(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(snap)
 	})
+	mux.HandleFunc("/api/sessions", func(w http.ResponseWriter, r *http.Request) {
+		sessions := agg.GetSessionsList()
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(sessions)
+	})
+	mux.HandleFunc("/api/export", func(w http.ResponseWriter, r *http.Request) {
+		snap := agg.Snapshot()
+		md := GenerateMarkdownReport(snap)
+		w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
+		_, _ = w.Write([]byte(md))
+	})
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -59,7 +70,31 @@ func TestServerEndpoints(t *testing.T) {
 		t.Errorf("expected 5100 total tokens, got %d", snap.TotalTokens)
 	}
 
-	// 2. Test WebSocket connection
+	// 2. Test /api/sessions
+	respSessions, err := http.Get(server.URL + "/api/sessions")
+	if err != nil {
+		t.Fatalf("GET /api/sessions failed: %v", err)
+	}
+	defer respSessions.Body.Close()
+	var sessions []parser.SessionSummaryItem
+	if err := json.NewDecoder(respSessions.Body).Decode(&sessions); err != nil {
+		t.Fatalf("failed to decode sessions: %v", err)
+	}
+	if len(sessions) == 0 {
+		t.Errorf("expected at least 1 session in list, got 0")
+	}
+
+	// 3. Test /api/export
+	respExport, err := http.Get(server.URL + "/api/export?session_id=c-1&format=markdown")
+	if err != nil {
+		t.Fatalf("GET /api/export failed: %v", err)
+	}
+	defer respExport.Body.Close()
+	if respExport.StatusCode != http.StatusOK {
+		t.Errorf("expected 200 OK for export, got %d", respExport.StatusCode)
+	}
+
+	// 4. Test WebSocket connection
 	wsURL := "ws" + strings.TrimPrefix(server.URL, "http") + "/ws"
 	header := http.Header{}
 	header.Set("Origin", "http://127.0.0.1:8080")

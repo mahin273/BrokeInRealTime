@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/mahin273/BrokeInRealTime/internal/aggregator"
@@ -42,9 +43,45 @@ func (s *Server) Start() error {
 
 	// API Snapshot route for healthchecks and headless queries
 	mux.HandleFunc("/api/snapshot", func(w http.ResponseWriter, r *http.Request) {
-		snap := s.agg.Snapshot()
+		sessionID := r.URL.Query().Get("session_id")
+		snap := s.agg.SnapshotForSession(sessionID)
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(snap)
+	})
+
+	// API Sessions route listing historical conversations
+	mux.HandleFunc("/api/sessions", func(w http.ResponseWriter, r *http.Request) {
+		sessions := s.agg.GetSessionsList()
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(sessions)
+	})
+
+	// API Export route for Markdown & JSON telemetry reports
+	mux.HandleFunc("/api/export", func(w http.ResponseWriter, r *http.Request) {
+		sessionID := r.URL.Query().Get("session_id")
+		format := strings.ToLower(r.URL.Query().Get("format"))
+		if format == "" {
+			format = "markdown"
+		}
+
+		snap := s.agg.SnapshotForSession(sessionID)
+		fileSession := snap.SessionID
+		if fileSession == "" || fileSession == "standby" {
+			fileSession = "all"
+		}
+
+		if format == "json" {
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"antigravity-%s-telemetry.json\"", fileSession))
+			_ = json.NewEncoder(w).Encode(snap)
+			return
+		}
+
+		// Markdown format
+		md := GenerateMarkdownReport(snap)
+		w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"antigravity-%s-report.md\"", fileSession))
+		_, _ = w.Write([]byte(md))
 	})
 
 	// Static Assets route

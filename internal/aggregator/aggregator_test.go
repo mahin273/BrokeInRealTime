@@ -77,4 +77,18 @@ func TestAggregatorIngestAndSnapshot(t *testing.T) {
 	if len(snap.Throughput60s) != 60 {
 		t.Errorf("expected 60 throughput slots, got %d", len(snap.Throughput60s))
 	}
+
+	// Verify tool breakdown
+	snapForC1 := agg.SnapshotForSession("c-1")
+	if len(snapForC1.ToolStats) == 0 {
+		t.Errorf("expected tool stats for c-1, got 0")
+	} else if snapForC1.ToolStats[0].Name != "run_command" {
+		t.Errorf("expected run_command tool stat, got %s", snapForC1.ToolStats[0].Name)
+	}
+
+	// Verify sessions list
+	sessions := agg.GetSessionsList()
+	if len(sessions) < 2 {
+		t.Errorf("expected at least 2 sessions, got %d", len(sessions))
+	}
 }

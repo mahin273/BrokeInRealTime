@@ -64,11 +64,14 @@ func ParseResetDuration(s string) time.Duration {
 
 // FileCursor tracks incremental reading of a single file.
 type FileCursor struct {
-	Path           string
-	Offset         int64
-	ConversationID string
-	OriginSource   string
-	DefaultModel   string
+	Path              string
+	Offset            int64
+	ConversationID    string
+	OriginSource      string
+	DefaultModel      string
+	LastCacheRead     int64
+	PendingCompaction bool
+	CompactionNote    string
 }
 
 // ParseResult holds new token events and quota updates parsed from lines.
@@ -142,6 +145,12 @@ func ParseIncremental(cursor *FileCursor, cfg *config.Config) (*ParseResult, err
 						}
 					}
 
+					// Check for Compaction / Checkpoint boundaries
+					if raw.Source == "SYSTEM" && (raw.Type == "CHECKPOINT" || strings.Contains(strings.ToLower(raw.Content), "compaction")) {
+						cursor.PendingCompaction = true
+						cursor.CompactionNote = "Context Compacted / Checkpoint"
+					}
+
 					// Check for Model token event
 					totalTokens := raw.InputTokens + raw.CacheReadTokens + raw.OutputTokens
 					if raw.Source == "MODEL" && totalTokens > 0 {
@@ -171,6 +180,23 @@ func ParseIncremental(cursor *FileCursor, cfg *config.Config) (*ParseResult, err
 							toolSummary = strings.Join(names, ", ")
 						}
 
+						isCompaction := false
+						compactionNote := ""
+						if cursor.PendingCompaction {
+							isCompaction = true
+							compactionNote = cursor.CompactionNote
+							if compactionNote == "" {
+								compactionNote = "Context Compacted"
+							}
+							cursor.PendingCompaction = false
+							cursor.CompactionNote = ""
+						} else if cursor.LastCacheRead > 40000 && raw.CacheReadTokens < (cursor.LastCacheRead*60/100) {
+							// Significant sudden cache drop (>40%) without explicit checkpoint
+							isCompaction = true
+							compactionNote = "Cache Invalidation / Re-seed"
+						}
+						cursor.LastCacheRead = raw.CacheReadTokens
+
 						evt := TokenEvent{
 							ID:              fmt.Sprintf("%s-%d", cursor.ConversationID, raw.StepIndex),
 							ConversationID:  cursor.ConversationID,
@@ -188,6 +214,8 @@ func ParseIncremental(cursor *FileCursor, cfg *config.Config) (*ParseResult, err
 							CreatedAt:       createdAt,
 							ToolsCount:      len(raw.ToolCalls),
 							ToolSummary:     toolSummary,
+							IsCompaction:    isCompaction,
+							CompactionNote:  compactionNote,
 						}
 						result.Events = append(result.Events, evt)
 					}

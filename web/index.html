@@ -48,7 +48,7 @@
     @media (min-width: 1024px) {
       header { flex-direction: row; align-items: center; justify-content: space-between; }
     }
-    .flex-row-center { display: flex; align-items: center; gap: 12px; }
+    .flex-row-center { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
     .pulse-wrapper { position: relative; display: flex; width: 12px; height: 12px; }
     .animate-ping {
       position: absolute; display: inline-flex; width: 100%; height: 100%; border-radius: 9999px;
@@ -68,6 +68,9 @@
     .badge-status.paused {
       background: rgba(245, 158, 11, 0.12); color: var(--amber); border-color: rgba(245, 158, 11, 0.25);
     }
+    .badge-status.inspecting {
+      background: rgba(168, 85, 247, 0.15); color: var(--purple); border-color: rgba(168, 85, 247, 0.3);
+    }
     .badge-status.offline {
       background: rgba(244, 63, 94, 0.12); color: var(--rose); border-color: rgba(244, 63, 94, 0.25);
     }
@@ -86,159 +89,160 @@
       font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s ease;
     }
     .action-btn:hover { background: var(--border); }
+    .action-btn.accent { background: rgba(56, 189, 248, 0.15); color: var(--primary); border-color: rgba(56, 189, 248, 0.3); }
+    .action-btn.accent:hover { background: rgba(56, 189, 248, 0.25); }
+
     .select-wrapper {
       display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px;
       border: 1px solid var(--border); background: var(--card); font-size: 12px;
     }
     select {
       background: transparent; border: none; color: var(--foreground); font-size: 12px; font-weight: 500;
-      cursor: pointer; outline: none; font-family: inherit;
+      cursor: pointer; outline: none; font-family: inherit; max-width: 220px;
     }
     select option { background: var(--card); color: var(--foreground); }
 
     /* KPI Grid */
     .grid-kpi {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(2, 1fr);
       gap: 14px;
     }
-    .card-kpi {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      gap: 6px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    }
-    .kpi-label-row { display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--muted-foreground); text-transform: uppercase; letter-spacing: 0.5px; }
-    .kpi-value { font-size: 24px; font-weight: 800; font-family: monospace; letter-spacing: -0.5px; }
-    .kpi-sub { font-size: 11px; color: var(--muted-foreground); }
+    @media (min-width: 768px) { .grid-kpi { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 1024px) { .grid-kpi { grid-template-columns: repeat(6, 1fr); } }
 
-    /* Budget & Quota Bar */
-    .budget-quota-grid {
-      display: grid;
-      grid-template-columns: 1.8fr 1.2fr;
-      gap: 14px;
+    .card-kpi {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 16px; display: flex; flex-direction: column; justify-content: space-between;
+      transition: border-color 0.15s ease;
     }
-    @media (max-width: 900px) { .budget-quota-grid { grid-template-columns: 1fr; } }
-    .progress-bar-bg { height: 10px; background: rgba(255, 255, 255, 0.06); border-radius: 5px; overflow: hidden; margin: 8px 0; }
-    .progress-bar-fill { height: 100%; background: linear-gradient(90deg, #38bdf8, #10b981); width: 0%; transition: width 0.3s ease; }
-    .progress-bar-fill.warning { background: linear-gradient(90deg, #38bdf8, #f59e0b); }
-    .progress-bar-fill.danger { background: linear-gradient(90deg, #f59e0b, #f43f5e); }
-    .quota-box {
-      border: 1px dashed var(--border); border-radius: 8px; padding: 12px; background: rgba(0, 0, 0, 0.2);
-      display: flex; flex-direction: column; justify-content: center; height: 100%;
+    .card-kpi:hover { border-color: rgba(148, 163, 184, 0.3); }
+    .kpi-label-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 500; color: var(--muted-foreground); }
+    .kpi-value { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin-top: 6px; font-family: monospace; }
+    .kpi-sub { font-size: 11px; color: var(--muted-foreground); margin-top: 4px; }
+
+    /* Alert Banners */
+    .banner-alert {
+      padding: 12px 18px; border-radius: 10px; display: flex; align-items: center;
+      justify-content: space-between; font-size: 12px; gap: 12px; margin-bottom: 2px;
     }
-    .quota-box.throttled {
-      border-color: var(--rose); background: rgba(244, 63, 94, 0.08);
-    }
+    .banner-quota { background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.3); }
+    .banner-warning { background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .banner-critical { background: rgba(244, 63, 94, 0.18); border: 1px solid rgba(244, 63, 94, 0.45); }
 
     /* Main Chart Section */
     .chart-section {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 20px; display: flex; flex-direction: column; gap: 16px;
     }
     .chart-header {
-      display: flex; flex-direction: column; gap: 10px;
+      display: flex; flex-direction: column; gap: 12px;
     }
     @media (min-width: 768px) {
       .chart-header { flex-direction: row; align-items: center; justify-content: space-between; }
     }
-    .series-toggles { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; }
+    .series-toggles { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 11px; }
     .series-checkbox {
-      display: flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 6px;
+      display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 6px;
       background: var(--background); border: 1px solid var(--border); cursor: pointer; user-select: none;
     }
-    .series-checkbox input { cursor: pointer; }
-    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-    
-    .canvas-container {
-      position: relative; width: 100%; height: 340px; background: rgba(9, 13, 22, 0.6);
-      border-radius: 8px; border: 1px solid var(--border); overflow: hidden;
-    }
-    canvas { display: block; width: 100%; height: 100%; }
+    .series-checkbox input { cursor: pointer; accent-color: var(--primary); }
+    .dot { width: 8px; height: 8px; border-radius: 9999px; display: inline-block; }
 
-    /* Floating Tooltip */
+    .canvas-container { position: relative; width: 100%; height: 320px; }
+    canvas { width: 100%; height: 100%; display: block; }
     .chart-tooltip {
-      position: absolute; pointer-events: none; display: none; background: rgba(17, 24, 39, 0.95);
-      backdrop-filter: blur(8px); border: 1px solid var(--border); border-radius: 8px; padding: 12px;
-      font-size: 12px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5); z-index: 20; min-width: 210px;
+      position: absolute; pointer-events: none; display: none; z-index: 50;
+      background: rgba(17, 24, 39, 0.95); backdrop-filter: blur(8px);
+      border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); font-size: 11px; width: 220px;
     }
-    .tooltip-header { display: flex; justify-content: space-between; padding-bottom: 6px; margin-bottom: 6px; border-bottom: 1px solid var(--border); font-weight: 600; }
-    .tooltip-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-mono: monospace; }
+    .tooltip-header { display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 6px; font-weight: 700; }
+    .tooltip-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
 
     /* Scrubber */
-    .scrubber-section { display: flex; flex-direction: column; gap: 6px; font-size: 11px; color: var(--muted-foreground); }
-    .scrubber-header { display: flex; justify-content: space-between; }
+    .scrubber-section { display: flex; flex-direction: column; gap: 6px; }
+    .scrubber-header { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted-foreground); }
     .scrubber-track {
-      position: relative; width: 100%; height: 28px; background: var(--background);
-      border-radius: 6px; border: 1px solid var(--border); padding: 2px; display: flex; align-items: center;
+      position: relative; height: 32px; background: var(--background); border: 1px solid var(--border);
+      border-radius: 6px; overflow: hidden; display: flex; align-items: center;
     }
-    .scrubber-track canvas { opacity: 0.5; border-radius: 4px; pointer-events: none; }
-    .scrubber-track input[type="range"] {
-      position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; margin: 0;
+    .scrubber-track canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0.45; }
+    .scrubber-track input[type=range] {
+      position: relative; width: 100%; z-index: 10; accent-color: var(--primary);
+      background: transparent; cursor: pointer;
     }
 
     /* Diagnostics Grid */
     .grid-diagnostics {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px;
+      display: grid; grid-template-columns: 1fr; gap: 14px;
+    }
+    @media (min-width: 1024px) {
+      .grid-diagnostics { grid-template-columns: 1fr 1fr 1fr; }
     }
     .diag-card {
-      background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px;
-      display: flex; flex-direction: column; gap: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 18px; display: flex; flex-direction: column; justify-content: space-between; gap: 14px;
     }
-    .diag-header { display: flex; justify-content: space-between; align-items: flex-start; }
-    .diag-canvas-box {
-      height: 160px; width: 100%; background: rgba(9, 13, 22, 0.5); border-radius: 8px; border: 1px solid var(--border); overflow: hidden;
-    }
-
-    /* Event Feed */
+    .diag-header { display: flex; justify-content: space-between; align-items: baseline; }
     .event-feed {
-      flex: 1; min-height: 160px; max-height: 160px; overflow-y: auto; font-family: monospace; font-size: 11px;
-      display: flex; flex-direction: column; gap: 6px; padding-right: 4px;
+      height: 140px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;
+      font-size: 11px; font-family: monospace; padding-right: 4px;
     }
-    .event-row { display: flex; align-items: flex-start; gap: 8px; line-height: 1.3; }
-    .tag-cli { color: var(--amber); font-weight: 700; }
-    .tag-app { color: var(--purple); font-weight: 700; }
-    .tag-cache { color: var(--emerald); font-weight: 700; }
-    .tag-exec { color: var(--sky); font-weight: 700; }
-    .tag-429 { color: var(--rose); font-weight: 700; }
+    .event-item {
+      display: flex; align-items: center; justify-content: space-between; padding: 4px 8px;
+      background: var(--background); border: 1px solid var(--border); border-radius: 6px;
+    }
+    .tag { font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 4px; text-transform: uppercase; }
+    .tag-app { background: rgba(56, 189, 248, 0.15); color: var(--sky); }
+    .tag-cli { background: rgba(168, 85, 247, 0.15); color: var(--purple); }
+    .tag-cache { background: rgba(16, 185, 129, 0.15); color: var(--emerald); }
+    .tag-exec { background: rgba(245, 158, 11, 0.15); color: var(--amber); }
 
-    /* Ledger Table */
+    /* Granular Tools & Subagent Breakdown Section */
+    .grid-deep-breakdown {
+      display: grid; grid-template-columns: 1fr; gap: 14px;
+    }
+    @media (min-width: 1024px) {
+      .grid-deep-breakdown { grid-template-columns: 3fr 2fr; }
+    }
+    .tool-bar-bg { width: 100%; height: 6px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; overflow: hidden; margin-top: 4px; }
+    .tool-bar-fill { height: 100%; border-radius: 4px; background: var(--primary); transition: width 0.3s ease; }
+
+    /* Table Section */
     .table-section {
-      background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px;
-      display: flex; flex-direction: column; gap: 14px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 20px; display: flex; flex-direction: column; gap: 14px;
     }
-    .table-header { display: flex; flex-direction: column; gap: 10px; }
-    @media (min-width: 768px) {
-      .table-header { flex-direction: row; justify-content: space-between; align-items: center; }
-    }
+    .table-header { display: flex; flex-direction: column; gap: 10px; justify-content: space-between; }
+    @media (min-width: 640px) { .table-header { flex-direction: row; align-items: center; } }
     .search-input {
-      background: var(--background); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px;
-      color: var(--foreground); font-size: 12px; outline: none; width: 220px; font-family: inherit;
+      background: var(--background); border: 1px solid var(--border); border-radius: 6px;
+      padding: 6px 12px; color: var(--foreground); font-size: 12px; outline: none; width: 220px;
     }
-    .search-input:focus { border-color: var(--primary); }
-    .table-wrapper {
-      border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; max-height: 320px; overflow-y: auto;
+    .table-wrapper { overflow-x: auto; max-height: 400px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: monospace; }
+    th {
+      text-align: left; padding: 10px 12px; color: var(--muted-foreground); border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; background: var(--card); font-weight: 600; font-size: 11px; z-index: 10;
     }
-    table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
-    thead {
-      background: var(--background); color: var(--muted-foreground); font-weight: 600; border-bottom: 1px solid var(--border);
-      position: sticky; top: 0; z-index: 10;
-    }
-    th { padding: 10px 12px; }
-    td { padding: 8px 12px; border-bottom: 1px solid #162032; font-family: monospace; }
+    td { padding: 9px 12px; border-bottom: 1px solid rgba(31, 41, 61, 0.4); }
     tr:hover td { background: rgba(255, 255, 255, 0.02); }
     .text-right { text-align: right; }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(4px);
+      z-index: 100; display: none; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-box {
+      background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+      width: 100%; max-width: 780px; max-height: 90vh; overflow-y: auto; padding: 24px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6); display: flex; flex-direction: column; gap: 18px;
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+    .close-btn { background: transparent; border: none; color: var(--muted-foreground); font-size: 18px; cursor: pointer; }
+    .close-btn:hover { color: #fff; }
 
     /* Footer */
     footer {
@@ -264,26 +268,43 @@
           <span class="badge" id="quotaBadge" style="color:var(--emerald);">Quota: Normal</span>
           <span id="statusBadge" class="badge badge-status">REALTIME ACTIVE</span>
         </div>
-        <p style="font-size: 12px; color: var(--muted-foreground); margin-top: 4px;">
-          High-frequency token tracking, context caching performance, and theoretical cost telemetry for Google Antigravity.
+        <p id="sessionTitleSub" style="font-size: 12px; color: var(--muted-foreground); margin-top: 4px;">
+          High-frequency token tracking, context caching performance, and cost telemetry for Google Antigravity.
         </p>
       </div>
 
       <!-- Action Controls -->
       <div class="controls-group">
-        <div class="btn-toggle-group">
-          <button id="modeRealtimeBtn" class="btn-toggle active">Live Stream</button>
-          <button id="modeHistoricalBtn" class="btn-toggle">Full History</button>
+        <!-- Session Selector Dropdown -->
+        <div class="select-wrapper">
+          <span style="color:var(--muted-foreground); font-weight:600;">Session:</span>
+          <select id="sessionPicker">
+            <option value="active">Live Active Session</option>
+          </select>
         </div>
 
+        <!-- Export Report Button -->
+        <button id="exportReportBtn" class="action-btn accent" title="Export clean Markdown telemetry report">
+          <svg style="width:14px; height:14px; fill:currentColor;" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+          <span>Export Report</span>
+        </button>
+
+        <!-- Session Comparison Button -->
+        <button id="openCompareBtn" class="action-btn" title="Compare two sessions side-by-side">
+          <svg style="width:14px; height:14px; fill:currentColor;" viewBox="0 0 24 24"><path d="M10 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h5v-2H5V5h5V3zm9 0h-5v2h5v14h-5v2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+          <span>Compare</span>
+        </button>
+
+        <!-- Toggle Play / Pause -->
         <button id="togglePlayBtn" class="action-btn">
           <svg id="pauseIcon" style="width:14px; height:14px; fill:currentColor;" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
           <svg id="playIcon" style="width:14px; height:14px; fill:currentColor; display:none;" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
           <span id="playBtnText">Pause Stream</span>
         </button>
 
+        <!-- Model Pricing Selector -->
         <div class="select-wrapper">
-          <span style="color:var(--muted-foreground); font-weight:600;">Model:</span>
+          <span style="color:var(--muted-foreground); font-weight:600;">Pricing:</span>
           <select id="modelSelect">
             <option value="gemini-3.8-flash" selected>Gemini 3.8 Flash</option>
             <option value="gemini-3.8-pro">Gemini 3.8 Pro</option>
@@ -293,6 +314,30 @@
         </div>
       </div>
     </header>
+
+    <!-- Context Health Alert Banner (Appears on context bloat >50% or critical >80%) -->
+    <div id="contextHealthBanner" class="banner-alert banner-warning" style="display:none;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:18px;" id="contextHealthIcon">⚠️</span>
+        <div>
+          <div style="font-weight:700;" id="contextHealthTitle">Context Bloat Warning</div>
+          <div style="font-size:11px; opacity:0.85;" id="contextHealthMsg">High active context footprint. Run /compact to optimize latency.</div>
+        </div>
+      </div>
+      <span class="badge" style="background:rgba(255,255,255,0.15); color:#fff; border-color:transparent;" id="contextLoadPctBadge">0%</span>
+    </div>
+
+    <!-- Quota 429 Alert Banner (Hidden by default, displayed only when active 429 cooldown is running) -->
+    <div id="quotaAlertBanner" class="banner-alert banner-quota" style="display:none;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:20px;">⚠️</span>
+        <div>
+          <div style="font-weight:700; color:var(--rose);">RESOURCE_EXHAUSTED (HTTP 429)</div>
+          <div style="font-size:12px; color:var(--muted-foreground);" id="quotaAlertMsg">Server quota limit reached. Cooldown timer active.</div>
+        </div>
+      </div>
+      <span class="badge" style="background:var(--rose); color:#fff; font-weight:700; padding:4px 10px;" id="quotaTimerBadge">Resets in --</span>
+    </div>
 
     <!-- KPI Summary Metric Cards (6 Cards) -->
     <section class="grid-kpi">
@@ -341,7 +386,7 @@
           <span class="badge" style="background:rgba(168,85,247,0.15); color:var(--purple); border-color:transparent;" id="kpiContextPct">0.0%</span>
         </div>
         <div class="kpi-value" style="color:var(--purple);" id="kpiCurrentContext">0</div>
-        <span class="kpi-sub">of 1,000,000 Window</span>
+        <span class="kpi-sub" id="kpiContextHealthLabel">Healthy (< 500k)</span>
       </div>
 
       <!-- Estimated Cost & Savings -->
@@ -356,25 +401,13 @@
       </div>
     </section>
 
-    <!-- Quota 429 Alert Banner (Hidden by default, displayed only when active 429 cooldown is running) -->
-    <div id="quotaAlertBanner" style="display:none; padding:12px 18px; border-radius:10px; background:rgba(244,63,94,0.12); border:1px solid rgba(244,63,94,0.3); align-items:center; justify-content:space-between; margin-bottom: 4px;">
-      <div style="display:flex; align-items:center; gap:10px;">
-        <span style="font-size:20px;">⚠️</span>
-        <div>
-          <div style="font-weight:700; color:var(--rose);">RESOURCE_EXHAUSTED (HTTP 429)</div>
-          <div style="font-size:12px; color:var(--muted-foreground);" id="quotaAlertMsg">Server quota limit reached. Cooldown timer active.</div>
-        </div>
-      </div>
-      <span class="badge" style="background:var(--rose); color:#fff; font-weight:700; padding:4px 10px;" id="quotaTimerBadge">Resets in --</span>
-    </div>
-
     <!-- Main Chart Section: Token Dynamics Over Steps -->
     <section class="chart-section">
       <div class="chart-header">
         <div>
           <h2 style="font-size:16px; font-weight:700;">Token Dynamics Over Steps</h2>
           <p style="font-size:12px; color:var(--muted-foreground);">
-            Interactive progression of fresh input, cached prompt reads, model output, and cumulative volume.
+            Interactive progression of fresh input, cached prompt reads, model output, and compaction milestones.
           </p>
         </div>
 
@@ -422,6 +455,9 @@
             <span id="tooltipStep" style="color:#fff;">Step #0</span>
             <span id="tooltipTime" style="color:var(--muted-foreground);">00:00:00</span>
           </div>
+          <div id="tooltipCompactionBanner" style="display:none; color:var(--amber); font-weight:700; margin-bottom:4px; border-bottom:1px solid rgba(245,158,11,0.3); padding-bottom:3px;">
+            ⚡ Context Compacted
+          </div>
           <div class="tooltip-row">
             <span style="color:var(--muted-foreground);"><span class="dot" style="background:var(--emerald);"></span> Cache Read:</span>
             <span id="tooltipCache" style="color:var(--emerald);">0</span>
@@ -435,15 +471,15 @@
             <span id="tooltipOutput" style="color:var(--amber);">0</span>
           </div>
           <div class="tooltip-row" style="border-top:1px solid var(--border); padding-top:4px; margin-top:4px;">
-            <span style="color:var(--muted-foreground);">Tools Executed:</span>
+            <span style="color:var(--muted-foreground);">Tool Invocations:</span>
             <span id="tooltipTools">0</span>
           </div>
           <div class="tooltip-row">
-            <span style="color:var(--muted-foreground);">Efficiency:</span>
+            <span style="color:var(--muted-foreground);">Cache Efficiency:</span>
             <span id="tooltipEfficiency" style="color:var(--emerald); font-weight:700;">0.0%</span>
           </div>
           <div class="tooltip-row">
-            <span style="color:var(--muted-foreground);">Source:</span>
+            <span style="color:var(--muted-foreground);">Attribution:</span>
             <span id="tooltipSource" style="font-weight:700;">APP</span>
           </div>
         </div>
@@ -463,6 +499,41 @@
       </div>
     </section>
 
+    <!-- Granular Tool Consumption Heatmap & Subagents Section -->
+    <section class="grid-deep-breakdown">
+      
+      <!-- Tool Heatmap Card -->
+      <div class="diag-card">
+        <div class="diag-header">
+          <div>
+            <h3 style="font-size:14px; font-weight:700;">Granular Tool Consumption</h3>
+            <p style="font-size:11px; color:var(--muted-foreground);">Token burn and invocation heatmap per tool</p>
+          </div>
+          <span class="badge" id="toolTotalCountBadge">0 Tools Active</span>
+        </div>
+
+        <div id="toolBreakdownList" style="display:flex; flex-direction:column; gap:10px; max-height:220px; overflow-y:auto; padding-right:4px;">
+          <div style="color:var(--muted-foreground); font-size:12px; text-align:center; padding:20px;">Analyzing tool invocations...</div>
+        </div>
+      </div>
+
+      <!-- Subagent Attribution Card -->
+      <div class="diag-card">
+        <div class="diag-header">
+          <div>
+            <h3 style="font-size:14px; font-weight:700;">Subagent Hierarchy</h3>
+            <p style="font-size:11px; color:var(--muted-foreground);">Child agent delegation & tree attribution</p>
+          </div>
+          <span class="badge" id="subagentCountBadge">Primary Agent</span>
+        </div>
+
+        <div id="subagentList" style="display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto; padding-right:4px;">
+          <div style="color:var(--muted-foreground); font-size:12px; text-align:center; padding:20px;">No child subagents spawned (single-agent workflow).</div>
+        </div>
+      </div>
+
+    </section>
+
     <!-- Secondary Diagnostics: Realtime Velocity, Cache Efficiency Donut & Live Event Stream -->
     <section class="grid-diagnostics">
       
@@ -478,33 +549,32 @@
             <span style="font-size:11px; color:var(--muted-foreground); display:block;">tok/sec</span>
           </div>
         </div>
-        <div class="diag-canvas-box">
+
+        <div style="height:90px; width:100%;">
           <canvas id="velocityCanvas"></canvas>
         </div>
-        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--muted-foreground);">
-          <span>Window: Rolling 60s</span>
-          <span id="peakVelocityVal">Peak: 0 tok/s</span>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--muted-foreground); border-top:1px solid var(--border); padding-top:8px;">
+          <span>60-Second Rolling Window</span>
+          <span id="peakVelocityVal" style="color:var(--foreground); font-weight:600;">Peak: 0 tok/s</span>
         </div>
       </div>
 
-      <!-- Cache Breakdown Donut Ring -->
+      <!-- Cache Efficiency Donut -->
       <div class="diag-card">
-        <div>
-          <h3 style="font-size:14px; font-weight:600;">Context Cache Efficiency</h3>
-          <p style="font-size:11px; color:var(--muted-foreground);">Prompt caching vs fresh ingestion</p>
-        </div>
-
-        <div style="display:flex; align-items:center; justify-content:center; height:150px;">
-          <div style="position:relative; width:130px; height:130px;">
-            <canvas id="donutCanvas"></canvas>
-            <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none;">
-              <span id="donutCenterPct" style="font-size:18px; font-weight:800; font-family:monospace;">0.0%</span>
-              <span style="font-size:10px; color:var(--muted-foreground);">Hit Ratio</span>
-            </div>
+        <div class="diag-header">
+          <div>
+            <h3 style="font-size:14px; font-weight:600;">Context Cache Donut</h3>
+            <p style="font-size:11px; color:var(--muted-foreground);">Prompt cache hit ratio distribution</p>
           </div>
+          <span class="badge" style="background:rgba(16,185,129,0.15); color:var(--emerald); border-color:transparent;" id="donutCenterPct">0%</span>
         </div>
 
-        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; text-align:center; font-size:11px;">
+        <div style="height:90px; width:100%; display:flex; justify-content:center; align-items:center;">
+          <canvas id="donutCanvas" style="max-height:85px; max-width:180px;"></canvas>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; font-size:11px; text-align:center;">
           <div style="background:var(--background); padding:6px; border-radius:6px; border:1px solid var(--border);">
             <span style="color:var(--emerald); font-weight:700; display:block;" id="donutCachedText">0</span>
             <span style="color:var(--muted-foreground);">Cached</span>
@@ -551,11 +621,11 @@
       <div class="table-header">
         <div>
           <h2 style="font-size:16px; font-weight:700;">Step-by-Step Ledger</h2>
-          <p style="font-size:12px; color:var(--muted-foreground);">Comprehensive execution trace from transcript</p>
+          <p style="font-size:12px; color:var(--muted-foreground);">Comprehensive execution trace with compaction checkpoints</p>
         </div>
 
         <div style="display:flex; align-items:center; gap:10px;">
-          <input type="text" id="tableSearchInput" placeholder="Filter steps..." class="search-input">
+          <input type="text" id="tableSearchInput" placeholder="Filter steps or tools..." class="search-input">
           <span id="filteredStepCount" style="font-size:11px; color:var(--muted-foreground);">Showing 0 steps</span>
         </div>
       </div>
@@ -567,10 +637,10 @@
               <th>Step</th>
               <th>Time</th>
               <th>Source</th>
+              <th>Tools Executed</th>
               <th class="text-right">Fresh Input</th>
               <th class="text-right">Cache Read</th>
               <th class="text-right">Output</th>
-              <th class="text-right">Tools</th>
               <th class="text-right">Efficiency</th>
             </tr>
           </thead>
@@ -581,12 +651,62 @@
       </div>
     </section>
 
+    <!-- Session Comparison Modal -->
+    <div id="compareModal" class="modal-backdrop">
+      <div class="modal-box">
+        <div class="modal-header">
+          <div>
+            <h2 style="font-size:16px; font-weight:700;">Compare Antigravity Sessions</h2>
+            <p style="font-size:12px; color:var(--muted-foreground);">Side-by-side efficiency, token volume, and cost delta</p>
+          </div>
+          <button id="closeCompareBtn" class="close-btn">✕</button>
+        </div>
+
+        <!-- Session Selectors -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <div>
+            <label style="font-size:11px; font-weight:600; color:var(--muted-foreground); display:block; margin-bottom:4px;">Session A</label>
+            <div class="select-wrapper" style="width:100%;">
+              <select id="compareSelectA" style="width:100%; max-width:100%;"></select>
+            </div>
+          </div>
+          <div>
+            <label style="font-size:11px; font-weight:600; color:var(--muted-foreground); display:block; margin-bottom:4px;">Session B</label>
+            <div class="select-wrapper" style="width:100%;">
+              <select id="compareSelectB" style="width:100%; max-width:100%;"></select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Comparison Table -->
+        <div class="table-wrapper" style="margin-top:6px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Telemetry Metric</th>
+                <th id="compareColATitle">Session A</th>
+                <th id="compareColBTitle">Session B</th>
+                <th class="text-right">Delta (B vs A)</th>
+              </tr>
+            </thead>
+            <tbody id="compareTableBody">
+              <tr><td colspan="4" style="text-align:center; padding:20px;">Select two sessions above to compare...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end;">
+          <button id="closeCompareBtn2" class="action-btn">Done</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Footer -->
     <footer>
       <div>
         <span>BrokeInRealTime — Strictly Local (127.0.0.1)</span>
         <span style="margin: 0 6px;">•</span>
-        <span>Passive Antigravity Telemetry v1.2.0</span>
+        <span>Passive Antigravity Telemetry v1.3.0</span>
       </div>
       <div>
         <span>Telemetry synchronized with transcript.jsonl & conversation_summaries.db</span>
@@ -597,13 +717,15 @@
 
   <script>
     // --- Application State ---
-    let steps = []; // [step_index, time_str, input_tokens, cache_read_tokens, output_tokens, tools_count, source, model, tool_summary]
+    let steps = []; // [step_index, time_str, input_tokens, cache_read_tokens, output_tokens, tools_count, source, model, tool_summary, is_compaction, compaction_note]
     let velocityData = new Array(60).fill(0);
     let isLiveActive = true;
     let selectedModel = 'gemini-3.8-flash';
     let visibleWindow = 60;
     let hoveredIndex = -1;
     let latestSnapshot = null;
+    let currentSelectedSession = 'active';
+    let allSessionsList = [];
 
     // Pricing models ($ per 1,000,000 tokens)
     const PRICING = {
@@ -636,6 +758,21 @@
       return '$ ' + (num || 0).toFixed(2);
     }
 
+    // Helper for rounded rectangles
+    function roundRect(ctx, x, y, width, height, radius) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+    }
+
     // --- Update KPI Metric Displays ---
     function updateKPIs() {
       let totalInput = 0;
@@ -664,6 +801,19 @@
       document.getElementById('kpiCurrentContext').textContent = formatNumber(activeContext);
       document.getElementById('kpiContextPct').textContent = contextPct + '%';
 
+      // Context Health Status Label
+      const cLabel = document.getElementById('kpiContextHealthLabel');
+      if (activeContext >= 800000) {
+        cLabel.textContent = 'Critical (≥ 80%)';
+        cLabel.style.color = 'var(--rose)';
+      } else if (activeContext >= 500000) {
+        cLabel.textContent = 'Bloat Warning (≥ 50%)';
+        cLabel.style.color = 'var(--amber)';
+      } else {
+        cLabel.textContent = 'Healthy (< 500k)';
+        cLabel.style.color = 'var(--muted-foreground)';
+      }
+
       // Dynamic Cost Recalculation based on selected model
       const rates = PRICING[selectedModel] || PRICING['gemini-3.8-flash'];
       const costReal = (totalInput * rates.input + totalCache * rates.cache + totalOutput * rates.output) / 1000000;
@@ -678,6 +828,9 @@
       document.getElementById('donutOutputText').textContent = formatNumber(totalOutput);
 
       if (latestSnapshot) {
+        if (latestSnapshot.session_title) {
+          document.getElementById('sessionTitleSub').textContent = latestSnapshot.session_title;
+        }
         if (latestSnapshot.all_time_tokens) {
           document.getElementById('kpiAllTimeText').textContent = `Machine Total: ${formatNumber(latestSnapshot.all_time_tokens)} (${latestSnapshot.total_sessions} sessions)`;
         }
@@ -685,6 +838,31 @@
           document.getElementById('kpiAllTimeCostText').textContent = `Machine Total: ${formatUSD(latestSnapshot.all_time_cost)}`;
         }
         document.getElementById('burnVelocityVal').textContent = `$ ${latestSnapshot.burn_rate_per_hour.toFixed(2)}/hr`;
+
+        // Context Bloat Health Banner
+        const chBanner = document.getElementById('contextHealthBanner');
+        const chTitle = document.getElementById('contextHealthTitle');
+        const chMsg = document.getElementById('contextHealthMsg');
+        const chIcon = document.getElementById('contextHealthIcon');
+        const chBadge = document.getElementById('contextLoadPctBadge');
+
+        if (latestSnapshot.context_health === 'critical') {
+          chBanner.style.display = 'flex';
+          chBanner.className = 'banner-alert banner-critical';
+          chIcon.textContent = '🚨';
+          chTitle.textContent = 'Critical Context Ceiling Approaching';
+          chMsg.textContent = latestSnapshot.context_health_msg || 'High context footprint. Run /compact immediately to avoid eviction.';
+          chBadge.textContent = contextPct + '% Window';
+        } else if (latestSnapshot.context_health === 'warning') {
+          chBanner.style.display = 'flex';
+          chBanner.className = 'banner-alert banner-warning';
+          chIcon.textContent = '⚠️';
+          chTitle.textContent = 'Context Bloat Warning';
+          chMsg.textContent = latestSnapshot.context_health_msg || 'Context load exceeded 500k tokens. Consider running /compact to optimize latency.';
+          chBadge.textContent = contextPct + '% Window';
+        } else {
+          chBanner.style.display = 'none';
+        }
 
         // Quota Sentinel
         const qBadge = document.getElementById('quotaBadge');
@@ -709,7 +887,77 @@
 
           qBanner.style.display = 'none';
         }
+
+        // Render Tool Breakdown & Subagents
+        renderToolBreakdown(latestSnapshot.tool_stats);
+        renderSubagents(latestSnapshot.subagents);
       }
+    }
+
+    // --- Render Tool Breakdown ---
+    function renderToolBreakdown(toolStats) {
+      const container = document.getElementById('toolBreakdownList');
+      const badge = document.getElementById('toolTotalCountBadge');
+      if (!toolStats || toolStats.length === 0) {
+        container.innerHTML = '<div style="color:var(--muted-foreground); font-size:12px; text-align:center; padding:20px;">No tools recorded for this session.</div>';
+        badge.textContent = '0 Tools Active';
+        return;
+      }
+
+      badge.textContent = `${toolStats.length} Tools Active`;
+      let html = '';
+      for (let t of toolStats) {
+        const pct = t.percentage.toFixed(1);
+        html += `
+          <div style="background:var(--background); padding:10px 12px; border-radius:8px; border:1px solid var(--border);">
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px;">
+              <span style="font-weight:700; color:var(--sky); font-family:monospace;">${t.name}</span>
+              <div style="display:flex; gap:12px; font-size:11px;">
+                <span style="color:var(--muted-foreground);">${t.calls} calls</span>
+                <span style="color:var(--foreground); font-weight:700;">${formatNumber(t.total_tokens)}</span>
+                <span style="color:var(--emerald); font-weight:600;">$${t.est_cost.toFixed(3)}</span>
+              </div>
+            </div>
+            <div class="tool-bar-bg">
+              <div class="tool-bar-fill" style="width:${Math.min(100, Math.max(2, t.percentage))}%;"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--muted-foreground); margin-top:4px;">
+              <span>${pct}% of session tokens</span>
+              <span>In: ${formatNumber(t.input_tokens)} | Cache: ${formatNumber(t.cache_tokens)} | Out: ${formatNumber(t.output_tokens)}</span>
+            </div>
+          </div>
+        `;
+      }
+      container.innerHTML = html;
+    }
+
+    // --- Render Subagent Attribution ---
+    function renderSubagents(subagents) {
+      const container = document.getElementById('subagentList');
+      const badge = document.getElementById('subagentCountBadge');
+      if (!subagents || subagents.length === 0) {
+        container.innerHTML = '<div style="color:var(--muted-foreground); font-size:12px; text-align:center; padding:20px;">Single Agent Workflow (No child subagents spawned).</div>';
+        badge.textContent = 'Primary Agent';
+        return;
+      }
+
+      badge.textContent = `${subagents.length} Child Subagents`;
+      let html = '';
+      for (let sub of subagents) {
+        html += `
+          <div style="background:var(--background); padding:10px 12px; border-radius:8px; border:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:700; font-size:12px; color:var(--purple);">${sub.agent_name || 'Subagent'}</div>
+              <div style="font-size:10px; color:var(--muted-foreground); font-family:monospace;">ID: ${sub.short_id} • Depth: Level ${sub.nesting_depth}</div>
+            </div>
+            <div style="text-align:right; font-size:11px;">
+              <span style="font-weight:700; color:var(--foreground);">${formatNumber(sub.tokens)} tokens</span>
+              <span style="display:block; font-size:10px; color:var(--muted-foreground);">${sub.step_count} turns • $${sub.cost.toFixed(3)}</span>
+            </div>
+          </div>
+        `;
+      }
+      container.innerHTML = html;
     }
 
     // --- Main Dynamics Canvas Chart ---
@@ -725,7 +973,7 @@
       const h = rect.height;
       const padLeft = 60;
       const padRight = 30;
-      const padTop = 20;
+      const padTop = 24;
       const padBottom = 30;
       const chartW = w - padLeft - padRight;
       const chartH = h - padTop - padBottom;
@@ -749,46 +997,47 @@
       for (let s of visibleData) {
         const cache = s[3];
         const input = s[2];
-        const out = s[4];
-        runningSum += (cache + input + out);
+        const output = s[4] * 5; // scaled for visibility
+        runningSum += (input + cache + s[4]);
         cumulativeVals.push(runningSum);
 
-        if (showCache) maxVal = Math.max(maxVal, cache);
-        if (showInput) maxVal = Math.max(maxVal, input);
-        if (showOutput) maxVal = Math.max(maxVal, out * 5); // visually boost output
+        if (showCache && cache > maxVal) maxVal = cache;
+        if (showInput && input > maxVal) maxVal = input;
+        if (showOutput && output > maxVal) maxVal = output;
+        if (showCumul && runningSum > maxVal) maxVal = runningSum;
       }
-      if (showCumul) maxVal = Math.max(maxVal, runningSum);
-      maxVal = Math.ceil(maxVal * 1.15 / 1000) * 1000;
+      maxVal = maxVal * 1.15; // padding top
 
-      // Draw Grid Lines & Labels
-      mainCtx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
-      mainCtx.lineWidth = 1;
-      mainCtx.fillStyle = '#94a3b8';
-      mainCtx.font = '11px ui-monospace, monospace';
+      // Draw Grid Lines & Y-Axis Labels
+      const gridCount = 5;
+      mainCtx.font = '10px monospace';
+      mainCtx.fillStyle = '#64748b';
       mainCtx.textAlign = 'right';
 
-      const gridCount = 5;
       for (let i = 0; i <= gridCount; i++) {
-        const yVal = (maxVal / gridCount) * i;
-        const y = padTop + chartH - (i / gridCount) * chartH;
+        const y = padTop + (chartH / gridCount) * i;
+        const val = Math.round(maxVal - (maxVal / gridCount) * i);
+
         mainCtx.beginPath();
         mainCtx.moveTo(padLeft, y);
-        mainCtx.lineTo(w - padRight, y);
+        mainCtx.lineTo(padLeft + chartW, y);
+        mainCtx.strokeStyle = 'rgba(31, 41, 61, 0.45)';
+        mainCtx.lineWidth = 1;
         mainCtx.stroke();
-        mainCtx.fillText(formatNumber(yVal), padLeft - 8, y + 4);
+
+        mainCtx.fillText(formatNumber(val), padLeft - 8, y + 3);
       }
 
-      // X-Axis Step Labels
+      // Draw X-Axis Ticks (Steps)
       mainCtx.textAlign = 'center';
-      const xSteps = Math.min(8, n);
-      for (let i = 0; i < xSteps; i++) {
-        const idx = Math.floor((i / (xSteps - 1)) * (n - 1));
-        const x = padLeft + (idx / (n - 1)) * chartW;
-        const stepNum = visibleData[idx][0];
-        mainCtx.fillText('S' + stepNum, x, h - 10);
+      const stepInterval = Math.max(1, Math.floor(n / 8));
+      for (let i = 0; i < n; i += stepInterval) {
+        const x = padLeft + (i / (n - 1)) * chartW;
+        mainCtx.fillText('#' + visibleData[i][0], x, padTop + chartH + 18);
       }
 
-      function drawSeries(getValue, strokeColor, fillColor, isArea = true) {
+      // Draw Series Helper
+      function drawSeries(getValue, strokeColor, fillColor, isArea) {
         if (n < 2) return;
         mainCtx.beginPath();
         for (let i = 0; i < n; i++) {
@@ -824,6 +1073,33 @@
       if (showInput) drawSeries(i => visibleData[i][2], '#0ea5e9', 'rgba(14, 165, 233, 0.15)', true);
       if (showOutput) drawSeries(i => visibleData[i][4] * 5, '#f59e0b', null, false);
       if (showCumul) drawSeries(i => cumulativeVals[i], '#a855f7', 'rgba(168, 85, 247, 0.10)', true);
+
+      // --- Draw Context Compaction Markers on Chart ---
+      for (let i = 0; i < n; i++) {
+        const item = visibleData[i];
+        if (item[9] === true) { // is_compaction
+          const cx = padLeft + (i / (n - 1)) * chartW;
+
+          mainCtx.save();
+          mainCtx.beginPath();
+          mainCtx.setLineDash([4, 4]);
+          mainCtx.moveTo(cx, padTop);
+          mainCtx.lineTo(cx, padTop + chartH);
+          mainCtx.strokeStyle = 'rgba(245, 158, 11, 0.85)';
+          mainCtx.lineWidth = 1.5;
+          mainCtx.stroke();
+
+          // Pill tag atop canvas
+          mainCtx.fillStyle = 'rgba(245, 158, 11, 0.95)';
+          roundRect(mainCtx, cx - 34, padTop - 18, 68, 16, 4);
+          mainCtx.fill();
+          mainCtx.fillStyle = '#090d16';
+          mainCtx.font = 'bold 9px monospace';
+          mainCtx.textAlign = 'center';
+          mainCtx.fillText('⚡ COMPACT', cx, padTop - 6);
+          mainCtx.restore();
+        }
+      }
 
       // Hover crosshair & dots
       if (hoveredIndex >= 0 && hoveredIndex < n) {
@@ -986,116 +1262,207 @@
         else velocityCtx.lineTo(x, y);
       }
       velocityCtx.strokeStyle = '#f59e0b';
-      velocityCtx.lineWidth = 2;
+      velocityCtx.lineWidth = 1.75;
       velocityCtx.stroke();
     }
 
-    // --- Live Event Feed Helper ---
-    function addEventLog(text, tag = 'INFO', tagClass = 'tag-cache') {
+    // --- Populate Step Ledger Table ---
+    function populateTable(filterText = '') {
+      const tbody = document.getElementById('stepTableBody');
+      const filteredCount = document.getElementById('filteredStepCount');
+      const q = filterText.toLowerCase().trim();
+
+      const matched = steps.filter(s => {
+        if (!q) return true;
+        return (
+          s[0].toString().includes(q) ||
+          s[1].toLowerCase().includes(q) ||
+          (s[8] && s[8].toLowerCase().includes(q)) ||
+          s[6].toLowerCase().includes(q)
+        );
+      });
+
+      filteredCount.textContent = `Showing ${matched.length} of ${steps.length} steps`;
+      if (matched.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--muted-foreground);">No steps match query.</td></tr>';
+        return;
+      }
+
+      let html = '';
+      const displaySteps = matched.slice(-150); // Show last 150 matching turns for DOM speed
+      for (let i = displaySteps.length - 1; i >= 0; i--) {
+        const s = displaySteps[i];
+        const totalPrompt = s[2] + s[3];
+        const eff = totalPrompt > 0 ? ((s[3] / totalPrompt) * 100).toFixed(1) + '%' : '0.0%';
+        const srcBadgeClass = s[6] === 'CLI' ? 'tag-cli' : 'tag-app';
+
+        let toolLabel = s[8] || 'chat/reasoning';
+        if (s[9] === true) {
+          toolLabel = `<span style="color:var(--amber); font-weight:700;">⚡ ${s[10] || 'Compacted'}</span> • ` + toolLabel;
+        }
+
+        html += `
+          <tr>
+            <td style="font-weight:700; color:var(--primary);">#${s[0]}</td>
+            <td style="color:var(--muted-foreground);">${s[1]}</td>
+            <td><span class="tag ${srcBadgeClass}">${s[6]}</span></td>
+            <td style="max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${toolLabel}</td>
+            <td class="text-right" style="color:var(--sky); font-weight:600;">${s[2].toLocaleString()}</td>
+            <td class="text-right" style="color:var(--emerald); font-weight:600;">${s[3].toLocaleString()}</td>
+            <td class="text-right" style="color:var(--amber);">${s[4].toLocaleString()}</td>
+            <td class="text-right" style="font-weight:700; color:var(--emerald);">${eff}</td>
+          </tr>
+        `;
+      }
+      tbody.innerHTML = html;
+    }
+
+    // --- Add Event Log ---
+    function addEventLog(text, tag, tagClass) {
       const container = document.getElementById('eventLogContainer');
-      const timeStr = new Date().toTimeString().split(' ')[0];
+      const timeStr = new Date().toLocaleTimeString();
       const div = document.createElement('div');
-      div.className = 'event-row';
+      div.className = 'event-item';
       div.innerHTML = `
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="tag ${tagClass}">${tag}</span>
+          <span>${text}</span>
+        </div>
         <span style="color:var(--muted-foreground);">${timeStr}</span>
-        <span class="${tagClass}">[${tag}]</span>
-        <span style="color:var(--foreground); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${text}</span>
       `;
-      container.insertBefore(div, container.firstChild);
-      if (container.children.length > 25) {
+      container.prepend(div);
+      while (container.children.length > 40) {
         container.removeChild(container.lastChild);
       }
     }
 
-    // --- Step-by-Step Ledger Table ---
-    function populateTable(filterQuery = '') {
-      const tbody = document.getElementById('stepTableBody');
-      tbody.innerHTML = '';
+    // --- Load Historical Sessions List ---
+    async function loadSessionsList() {
+      try {
+        const res = await fetch('/api/sessions');
+        allSessionsList = await res.json();
 
-      let matching = steps;
-      if (filterQuery) {
-        const q = filterQuery.toLowerCase();
-        matching = steps.filter(s => 
-          ('step ' + s[0]).includes(q) || 
-          s[1].includes(q) || 
-          String(s[2]).includes(q) ||
-          String(s[3]).includes(q) ||
-          (s[6] || '').toLowerCase().includes(q) ||
-          (s[8] || '').toLowerCase().includes(q)
-        );
-      }
+        const picker = document.getElementById('sessionPicker');
+        picker.innerHTML = '<option value="active">Live Active Session</option>';
 
-      document.getElementById('filteredStepCount').textContent = `Showing ${matching.length} steps`;
+        const compA = document.getElementById('compareSelectA');
+        const compB = document.getElementById('compareSelectB');
+        compA.innerHTML = '';
+        compB.innerHTML = '';
 
-      if (matching.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--muted-foreground);">No steps matching query.</td></tr>`;
-        return;
-      }
+        allSessionsList.forEach((s, idx) => {
+          const title = s.title || `Session ${s.short_id}`;
+          const tokensStr = formatNumber(s.total_tokens);
+          const opt = document.createElement('option');
+          opt.value = s.id;
+          opt.textContent = `${title} (${tokensStr} tok • ${s.last_activity_str})`;
+          picker.appendChild(opt);
 
-      const displaySteps = matching.slice(-100).reverse();
-      for (let s of displaySteps) {
-        const tr = document.createElement('tr');
-        const totalPrompt = s[2] + s[3];
-        const hitRate = totalPrompt > 0 ? ((s[3] / totalPrompt) * 100).toFixed(1) + '%' : '0.0%';
-        const srcBadge = s[6] === 'CLI' 
-          ? '<span class="badge" style="background:rgba(245,158,11,0.15); color:var(--amber);">CLI</span>' 
-          : '<span class="badge" style="background:rgba(168,85,247,0.15); color:var(--purple);">APP</span>';
+          const optA = opt.cloneNode(true);
+          const optB = opt.cloneNode(true);
+          compA.appendChild(optA);
+          compB.appendChild(optB);
+        });
 
-        tr.innerHTML = `
-          <td style="font-weight:700; color:var(--foreground);">#${s[0]}</td>
-          <td style="color:var(--muted-foreground);">${s[1]}</td>
-          <td>${srcBadge}</td>
-          <td class="text-right" style="color:var(--sky);">${s[2].toLocaleString()}</td>
-          <td class="text-right" style="color:var(--emerald);">${s[3].toLocaleString()}</td>
-          <td class="text-right" style="color:var(--amber);">${s[4].toLocaleString()}</td>
-          <td class="text-right" style="color:var(--foreground);">${s[5]}</td>
-          <td class="text-right" style="font-weight:700; color:var(--emerald);">${hitRate}</td>
-        `;
-        tbody.appendChild(tr);
+        if (compB.options.length > 1) {
+          compB.selectedIndex = 1;
+        }
+      } catch (err) {
+        console.error('Failed to load sessions list', err);
       }
     }
 
-    // --- WebSocket Live Stream ---
-    let ws = null;
-    const wsUrl = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
+    // --- Fetch Snapshot for Chosen Session ---
+    async function fetchSessionSnapshot(sessionId) {
+      try {
+        const url = sessionId === 'active' ? '/api/snapshot' : `/api/snapshot?session_id=${sessionId}`;
+        const res = await fetch(url);
+        const snap = await res.json();
+        latestSnapshot = snap;
 
+        const sessionBadge = document.getElementById('sessionBadge');
+        const statusBadge = document.getElementById('statusBadge');
+        sessionBadge.textContent = `Session: ${snap.session_id}`;
+
+        if (sessionId !== 'active') {
+          statusBadge.textContent = 'INSPECTING ARCHIVE';
+          statusBadge.className = 'badge badge-status inspecting';
+        } else {
+          statusBadge.textContent = isLiveActive ? 'REALTIME ACTIVE' : 'STREAM PAUSED';
+          statusBadge.className = isLiveActive ? 'badge badge-status' : 'badge badge-status paused';
+        }
+
+        if (snap.steps && snap.steps.length > 0) {
+          steps = snap.steps.map(s => [
+            s.step_index,
+            s.time_str,
+            s.input_tokens,
+            s.cache_read_tokens,
+            s.output_tokens,
+            s.tools_count,
+            s.origin_source,
+            s.model,
+            s.tool_summary,
+            s.is_compaction,
+            s.compaction_note
+          ]);
+
+          const scrubber = document.getElementById('rangeScrubber');
+          visibleWindow = Math.max(steps.length, 60);
+          scrubber.max = visibleWindow;
+          scrubber.value = visibleWindow;
+          document.getElementById('scrubEndLabel').textContent = `Step ${steps[steps.length - 1][0]}`;
+        } else {
+          steps = [];
+        }
+
+        updateKPIs();
+        renderMainChart();
+        renderMiniMap();
+        renderDonut();
+        populateTable(document.getElementById('tableSearchInput').value);
+      } catch (err) {
+        console.error('Failed to fetch session snapshot', err);
+      }
+    }
+
+    // --- WebSocket Telemetry Loop ---
+    let ws = null;
     function connectWS() {
+      const loc = window.location;
+      const wsUrl = `ws://${loc.host}/ws`;
       ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        document.getElementById('livePing').style.display = 'inline-flex';
-        document.getElementById('liveDot').style.background = 'var(--emerald)';
-        document.getElementById('statusBadge').textContent = 'REALTIME ACTIVE';
-        document.getElementById('statusBadge').className = 'badge badge-status';
-        addEventLog('Connected to BrokeInRealTime local telemetry stream', 'SYS', 'tag-exec');
+        addEventLog('Connected to BrokeInRealTime telemetry hub', 'HUB', 'tag-cache');
+        loadSessionsList();
       };
 
       ws.onclose = () => {
-        document.getElementById('livePing').style.display = 'none';
-        document.getElementById('liveDot').style.background = 'var(--rose)';
-        document.getElementById('statusBadge').textContent = 'RECONNECTING...';
-        document.getElementById('statusBadge').className = 'badge badge-status offline';
+        addEventLog('Hub disconnected. Retrying in 2s...', 'HUB', 'tag-cli');
         setTimeout(connectWS, 2000);
       };
 
-      ws.onerror = () => {
-        ws.close();
+      ws.onerror = (err) => {
+        console.error('WS Error:', err);
       };
 
-      ws.onmessage = (e) => {
-        if (!isLiveActive) return; // Stream paused by user
+      ws.onmessage = (evt) => {
+        if (!isLiveActive || currentSelectedSession !== 'active') return;
+
         try {
-          const snap = JSON.parse(e.data);
+          const snap = JSON.parse(evt.data);
           latestSnapshot = snap;
 
-          if (snap.session_id) {
-            document.getElementById('sessionBadge').textContent = `Session: ${snap.session_id}`;
+          document.getElementById('sessionBadge').textContent = `Session: ${snap.session_id}`;
+          if (snap.session_title) {
+            document.getElementById('sessionTitleSub').textContent = snap.session_title;
           }
 
-          if (snap.throughput_60s && snap.throughput_60s.length > 0) {
+          if (snap.throughput_60s && snap.throughput_60s.length === 60) {
             velocityData = snap.throughput_60s;
             const currentTok = velocityData[velocityData.length - 1] || 0;
-            const peakTok = Math.max(...velocityData);
+            const peakTok = Math.max(...velocityData, 0);
             document.getElementById('currentVelocityVal').textContent = currentTok.toLocaleString();
             document.getElementById('peakVelocityVal').textContent = `Peak: ${peakTok.toLocaleString()} tok/s`;
           }
@@ -1111,18 +1478,23 @@
               s.tools_count,
               s.origin_source,
               s.model,
-              s.tool_summary
+              s.tool_summary,
+              s.is_compaction,
+              s.compaction_note
             ]);
 
             // If new step added, log to event feed
             if (steps.length > prevLen && prevLen > 0) {
               const latest = steps[steps.length - 1];
               const srcClass = latest[6] === 'CLI' ? 'tag-cli' : 'tag-app';
-              addEventLog(
-                `Step #${latest[0]} [${latest[6]}]: ${latest[2].toLocaleString()} in (${latest[3].toLocaleString()} cached), ${latest[4].toLocaleString()} out ${latest[8] ? '— ' + latest[8] : ''}`,
-                latest[6] || 'EXEC',
-                srcClass
-              );
+              let logNote = `Step #${latest[0]} [${latest[6]}]: ${latest[2].toLocaleString()} in (${latest[3].toLocaleString()} cached), ${latest[4].toLocaleString()} out`;
+              if (latest[9] === true) {
+                logNote = `⚡ [COMPACTED] ` + logNote;
+              }
+              if (latest[8]) {
+                logNote += ` — ${latest[8]}`;
+              }
+              addEventLog(logNote, latest[6] || 'EXEC', srcClass);
             }
 
             const scrubber = document.getElementById('rangeScrubber');
@@ -1146,7 +1518,7 @@
       };
     }
 
-    // --- Interactive Mouse Handlers ---
+    // --- Interactive Mouse Handlers on Chart ---
     mainCanvas.addEventListener('mousemove', (e) => {
       const rect = mainCanvas.getBoundingClientRect();
       const mx = e.clientX - rect.left;
@@ -1164,18 +1536,27 @@
         if (target) {
           chartTooltip.style.display = 'block';
           chartTooltip.style.left = Math.min(rect.width - 230, mx + 15) + 'px';
-          chartTooltip.style.top = Math.min(rect.height - 180, Math.max(10, e.clientY - rect.top - 40)) + 'px';
+          chartTooltip.style.top = Math.min(rect.height - 210, Math.max(10, e.clientY - rect.top - 40)) + 'px';
 
           document.getElementById('tooltipStep').textContent = 'Step #' + target[0];
           document.getElementById('tooltipTime').textContent = target[1];
           document.getElementById('tooltipCache').textContent = target[3].toLocaleString();
           document.getElementById('tooltipInput').textContent = target[2].toLocaleString();
           document.getElementById('tooltipOutput').textContent = target[4].toLocaleString();
-          document.getElementById('tooltipTools').textContent = target[5];
+          document.getElementById('tooltipTools').textContent = target[5] + (target[8] ? ` (${target[8]})` : '');
           const totalPrompt = target[2] + target[3];
           const rate = totalPrompt > 0 ? ((target[3] / totalPrompt) * 100).toFixed(1) + '%' : '0.0%';
           document.getElementById('tooltipEfficiency').textContent = rate;
           document.getElementById('tooltipSource').textContent = target[6] || 'APP';
+
+          // Compaction Indicator in Tooltip
+          const compBanner = document.getElementById('tooltipCompactionBanner');
+          if (target[9] === true) {
+            compBanner.style.display = 'block';
+            compBanner.textContent = '⚡ ' + (target[10] || 'Context Compacted');
+          } else {
+            compBanner.style.display = 'none';
+          }
         }
         renderMainChart();
       } else {
@@ -1213,7 +1594,7 @@
     document.getElementById('modelSelect').addEventListener('change', (e) => {
       selectedModel = e.target.value;
       updateKPIs();
-      addEventLog(`Switched pricing model to ${selectedModel}`, 'CONFIG', 'tag-exec');
+      addEventLog(`Switched pricing matrix to ${selectedModel}`, 'CONFIG', 'tag-exec');
     });
 
     document.getElementById('tableSearchInput').addEventListener('input', (e) => {
@@ -1222,6 +1603,24 @@
 
     document.getElementById('clearLogBtn').addEventListener('click', () => {
       document.getElementById('eventLogContainer').innerHTML = '';
+    });
+
+    // Session Picker Event
+    document.getElementById('sessionPicker').addEventListener('change', (e) => {
+      currentSelectedSession = e.target.value;
+      if (currentSelectedSession === 'active') {
+        fetchSessionSnapshot('active');
+        addEventLog('Switched back to Live Active Stream', 'NAV', 'tag-cache');
+      } else {
+        fetchSessionSnapshot(currentSelectedSession);
+        addEventLog(`Inspecting archive session: ${currentSelectedSession.substring(0, 8)}`, 'NAV', 'tag-cli');
+      }
+    });
+
+    // Export Report
+    document.getElementById('exportReportBtn').addEventListener('click', () => {
+      const sessId = currentSelectedSession === 'active' ? (latestSnapshot ? latestSnapshot.session_id : '') : currentSelectedSession;
+      window.location.href = `/api/export?session_id=${sessId}&format=markdown`;
     });
 
     // Pause / Resume Stream
@@ -1256,27 +1655,104 @@
       }
     });
 
-    // Live Stream vs Full History Buttons
-    const modeRealtimeBtn = document.getElementById('modeRealtimeBtn');
-    const modeHistoricalBtn = document.getElementById('modeHistoricalBtn');
+    // --- Compare Modal Logic ---
+    const compareModal = document.getElementById('compareModal');
+    const openCompareBtn = document.getElementById('openCompareBtn');
+    const closeCompareBtn = document.getElementById('closeCompareBtn');
+    const closeCompareBtn2 = document.getElementById('closeCompareBtn2');
+    const compareSelectA = document.getElementById('compareSelectA');
+    const compareSelectB = document.getElementById('compareSelectB');
 
-    modeRealtimeBtn.addEventListener('click', () => {
-      visibleWindow = Math.min(60, steps.length);
-      rangeScrubber.value = visibleWindow;
-      modeRealtimeBtn.className = 'btn-toggle active';
-      modeHistoricalBtn.className = 'btn-toggle';
-      renderMainChart();
+    openCompareBtn.addEventListener('click', () => {
+      compareModal.style.display = 'flex';
+      runComparison();
     });
+    closeCompareBtn.addEventListener('click', () => { compareModal.style.display = 'none'; });
+    closeCompareBtn2.addEventListener('click', () => { compareModal.style.display = 'none'; });
 
-    modeHistoricalBtn.addEventListener('click', () => {
-      visibleWindow = Math.max(steps.length, 60);
-      rangeScrubber.value = visibleWindow;
-      modeHistoricalBtn.className = 'btn-toggle active';
-      modeRealtimeBtn.className = 'btn-toggle';
-      renderMainChart();
-    });
+    compareSelectA.addEventListener('change', runComparison);
+    compareSelectB.addEventListener('change', runComparison);
 
-    // Window Resize Observer for flawless responsive canvas rendering
+    async function runComparison() {
+      const idA = compareSelectA.value;
+      const idB = compareSelectB.value;
+      if (!idA || !idB) return;
+
+      try {
+        const [resA, resB] = await Promise.all([
+          fetch(`/api/snapshot?session_id=${idA}`).then(r => r.json()),
+          fetch(`/api/snapshot?session_id=${idB}`).then(r => r.json())
+        ]);
+
+        document.getElementById('compareColATitle').textContent = resA.session_title || resA.session_id;
+        document.getElementById('compareColBTitle').textContent = resB.session_title || resB.session_id;
+
+        function deltaText(valA, valB, isCost = false, isPct = false) {
+          const diff = valB - valA;
+          const sign = diff >= 0 ? '+' : '';
+          const color = diff < 0 ? 'var(--emerald)' : (diff > 0 ? 'var(--amber)' : 'var(--muted-foreground)');
+          if (isCost) return `<span style="color:${color}; font-weight:700;">${sign}$${diff.toFixed(2)}</span>`;
+          if (isPct) return `<span style="color:${color}; font-weight:700;">${sign}${diff.toFixed(1)}%</span>`;
+          return `<span style="color:${color}; font-weight:700;">${sign}${formatNumber(diff)}</span>`;
+        }
+
+        const tbody = document.getElementById('compareTableBody');
+        tbody.innerHTML = `
+          <tr>
+            <td><strong>Total Steps</strong></td>
+            <td>${resA.step_count}</td>
+            <td>${resB.step_count}</td>
+            <td class="text-right">${deltaText(resA.step_count, resB.step_count)}</td>
+          </tr>
+          <tr>
+            <td><strong>Total Tokens</strong></td>
+            <td>${formatNumber(resA.total_tokens)}</td>
+            <td>${formatNumber(resB.total_tokens)}</td>
+            <td class="text-right">${deltaText(resA.total_tokens, resB.total_tokens)}</td>
+          </tr>
+          <tr>
+            <td><strong>Cache Hit Ratio</strong></td>
+            <td style="color:var(--emerald); font-weight:700;">${resA.cache_ratio.toFixed(1)}%</td>
+            <td style="color:var(--emerald); font-weight:700;">${resB.cache_ratio.toFixed(1)}%</td>
+            <td class="text-right">${deltaText(resA.cache_ratio, resB.cache_ratio, false, true)}</td>
+          </tr>
+          <tr>
+            <td><strong>Fresh Input Tokens</strong></td>
+            <td style="color:var(--sky);">${formatNumber(resA.total_input)}</td>
+            <td style="color:var(--sky);">${formatNumber(resB.total_input)}</td>
+            <td class="text-right">${deltaText(resA.total_input, resB.total_input)}</td>
+          </tr>
+          <tr>
+            <td><strong>Output / Thinking</strong></td>
+            <td style="color:var(--amber);">${formatNumber(resA.total_output)}</td>
+            <td style="color:var(--amber);">${formatNumber(resB.total_output)}</td>
+            <td class="text-right">${deltaText(resA.total_output, resB.total_output)}</td>
+          </tr>
+          <tr>
+            <td><strong>Estimated Net Cost</strong></td>
+            <td><strong>$${resA.total_cost.toFixed(2)}</strong></td>
+            <td><strong>$${resB.total_cost.toFixed(2)}</strong></td>
+            <td class="text-right">${deltaText(resA.total_cost, resB.total_cost, true)}</td>
+          </tr>
+          <tr>
+            <td><strong>Context Cache Savings</strong></td>
+            <td style="color:var(--emerald);">$${resA.total_savings.toFixed(2)}</td>
+            <td style="color:var(--emerald);">$${resB.total_savings.toFixed(2)}</td>
+            <td class="text-right">${deltaText(resA.total_savings, resB.total_savings, true)}</td>
+          </tr>
+          <tr>
+            <td><strong>Top Tool Used</strong></td>
+            <td><code>${resA.tool_stats && resA.tool_stats[0] ? resA.tool_stats[0].name : 'none'}</code></td>
+            <td><code>${resB.tool_stats && resB.tool_stats[0] ? resB.tool_stats[0].name : 'none'}</code></td>
+            <td class="text-right">-</td>
+          </tr>
+        `;
+      } catch (err) {
+        console.error('Comparison error', err);
+      }
+    }
+
+    // Window Resize Observer for responsive canvas rendering
     window.addEventListener('resize', () => {
       renderMainChart();
       renderMiniMap();

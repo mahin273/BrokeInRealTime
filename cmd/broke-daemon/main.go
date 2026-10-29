@@ -49,6 +49,7 @@ func main() {
 	resolver := meta.NewResolver(dbPath)
 
 	agg := aggregator.NewAggregator(cfg)
+	agg.SetResolver(resolver)
 
 	w, err := watcher.NewWatcher(baseDir, cfg, agg, resolver)
 	if err != nil {
