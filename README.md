@@ -4,7 +4,7 @@
 
 ---
 
-## ⚡ Key Highlights
+##  Key Highlights
 
 * **100% Offline & Local (`127.0.0.1`):** No cloud servers, no remote telemetry, no external databases. All data stays strictly on your workstation.
 * **Zero External Scraping:** Passively watches local Antigravity transcript logs and SQLite session tables. Never creates outbound network requests to Google or Gemini endpoints.
@@ -15,7 +15,7 @@
 
 ---
 
-## 🚀 Quickstart
+##  Quickstart
 
 ### Prerequisites
 * [Go 1.22+](https://golang.org) (with standard C toolchain `gcc` for SQLite CGO driver).
@@ -35,7 +35,7 @@ go build -ldflags="-s -w" -o broke-daemon ./cmd/broke-daemon
 ```
 
 Open your browser to:
-👉 **`http://127.0.0.1:8080`**
+ **`http://127.0.0.1:8080`**
 
 ### Command-Line Options
 ```text
@@ -54,7 +54,7 @@ Usage of ./broke-daemon:
 
 ---
 
-## 🖥️ Background Service Setup
+##  Background Service Setup
 
 ### Linux (`systemd --user`)
 1. Copy the compiled binary to your local bin:
@@ -87,7 +87,7 @@ Usage of ./broke-daemon:
 
 ---
 
-## ⚙️ Pricing Configuration
+##  Pricing Configuration
 
 Model rates can be customized in `pricing.json` (or placed in `~/.config/brokeinrealtime/pricing.json`):
 
@@ -120,7 +120,7 @@ Model rates can be customized in `pricing.json` (or placed in `~/.config/brokein
 
 ---
 
-## 🔒 Security
+##  Security
 
 * **127.0.0.1 Binding:** Refuses external interfaces (`0.0.0.0`).
 * **Cross-Site WebSocket Hijacking (CSWSH) Protection:** Verifies the `Origin` header on WebSocket handshakes to block untrusted browser origins from reading token activity.
@@ -128,5 +128,5 @@ Model rates can be customized in `pricing.json` (or placed in `~/.config/brokein
 
 ---
 
-## 📜 License
+##  License
 MIT License.

@@ -182,6 +182,7 @@ func ParseIncremental(cursor *FileCursor, cfg *config.Config) (*ParseResult, err
 							RawCost:         rawCost,
 							CacheSavings:    savings,
 							CreatedAt:       createdAt,
+							ToolsCount:      len(raw.ToolCalls),
 							ToolSummary:     toolSummary,
 						}
 						result.Events = append(result.Events, evt)

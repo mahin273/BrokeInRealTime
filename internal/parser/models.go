@@ -38,6 +38,7 @@ type TokenEvent struct {
 	RawCost         float64   `json:"raw_cost"`
 	CacheSavings    float64   `json:"cache_savings"`
 	CreatedAt       time.Time `json:"created_at"`
+	ToolsCount      int       `json:"tools_count"`
 	ToolSummary     string    `json:"tool_summary,omitempty"`
 }
 

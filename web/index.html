@@ -3,390 +3,1098 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BrokeInRealTime — Antigravity Telemetry</title>
+  <title>BrokeInRealTime — Antigravity Token Telemetry</title>
   <style>
     :root {
-      --bg: #0b0f19;
-      --card-bg: #121826;
-      --card-border: #1e293b;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --accent: #38bdf8;
-      --green: #10b981;
-      --red: #ef4444;
-      --yellow: #f59e0b;
+      --background: #090d16;
+      --foreground: #f3f4f6;
+      --card: #111827;
+      --card-hover: #162032;
+      --border: #1f293d;
+      --muted-foreground: #94a3b8;
+      --primary: #38bdf8;
+      --primary-foreground: #090d16;
+      --emerald: #10b981;
+      --sky: #0ea5e9;
+      --amber: #f59e0b;
       --purple: #a855f7;
+      --rose: #f43f5e;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      background-color: var(--bg);
-      color: var(--text);
+      background-color: var(--background);
+      color: var(--foreground);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", monospace;
-      padding: 16px;
+      padding: 24px;
+      min-height: 100vh;
       line-height: 1.4;
     }
-    .container { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+    .max-w-7xl { max-width: 1360px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
     
+    /* Scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.1); }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.25); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.45); }
+
     /* Header */
     header {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 18px;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
-    }
-    .logo-group { display: flex; align-items: center; gap: 12px; }
-    .badge-live {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 10px;
-      border-radius: 9999px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      background: rgba(16, 185, 129, 0.15);
-      color: var(--green);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-    }
-    .badge-live.offline {
-      background: rgba(239, 68, 68, 0.15);
-      color: var(--red);
-      border-color: rgba(239, 68, 68, 0.3);
-    }
-    .pulse-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--green);
-      animation: pulse 1.5s infinite;
-    }
-    .badge-live.offline .pulse-dot { background: var(--red); animation: none; }
-    @keyframes pulse {
-      0% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.85); }
-      100% { opacity: 1; transform: scale(1); }
-    }
-    .title { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
-    .meta-tags { display: flex; gap: 12px; font-size: 12px; color: var(--text-muted); font-family: monospace; }
-
-    /* Top Grid */
-    .grid-3 {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      flex-direction: column;
       gap: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
     }
-    .card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
-      padding: 18px;
+    @media (min-width: 1024px) {
+      header { flex-direction: row; align-items: center; justify-content: space-between; }
+    }
+    .flex-row-center { display: flex; align-items: center; gap: 12px; }
+    .pulse-wrapper { position: relative; display: flex; width: 12px; height: 12px; }
+    .animate-ping {
+      position: absolute; display: inline-flex; width: 100%; height: 100%; border-radius: 9999px;
+      background: var(--emerald); opacity: 0.75; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+    }
+    .pulse-dot { position: relative; display: inline-flex; width: 12px; height: 12px; border-radius: 9999px; background: var(--emerald); }
+    @keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
+
+    .header-title { font-size: 19px; font-weight: 800; letter-spacing: -0.4px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9999px;
+      font-size: 11px; font-weight: 600; border: 1px solid var(--border); background: var(--card); color: var(--muted-foreground);
+    }
+    .badge-status {
+      background: rgba(16, 185, 129, 0.12); color: var(--emerald); border-color: rgba(16, 185, 129, 0.25);
+    }
+    .badge-status.paused {
+      background: rgba(245, 158, 11, 0.12); color: var(--amber); border-color: rgba(245, 158, 11, 0.25);
+    }
+    .badge-status.offline {
+      background: rgba(244, 63, 94, 0.12); color: var(--rose); border-color: rgba(244, 63, 94, 0.25);
+    }
+
+    /* Action Controls */
+    .controls-group { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 12px; }
+    .btn-toggle-group { display: flex; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 3px; }
+    .btn-toggle {
+      padding: 6px 12px; border-radius: 6px; font-weight: 500; border: none; cursor: pointer;
+      background: transparent; color: var(--muted-foreground); transition: all 0.15s ease;
+    }
+    .btn-toggle.active { background: var(--primary); color: var(--primary-foreground); font-weight: 600; }
+    .action-btn {
+      display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--card); color: var(--foreground);
+      font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s ease;
+    }
+    .action-btn:hover { background: var(--border); }
+    .select-wrapper {
+      display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--card); font-size: 12px;
+    }
+    select {
+      background: transparent; border: none; color: var(--foreground); font-size: 12px; font-weight: 500;
+      cursor: pointer; outline: none; font-family: inherit;
+    }
+    select option { background: var(--card); color: var(--foreground); }
+
+    /* KPI Grid */
+    .grid-kpi {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+    }
+    .card-kpi {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
-    }
-    .card-label {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.7px;
-      color: var(--text-muted);
-    }
-    .big-value {
-      font-size: 32px;
-      font-weight: 800;
-      font-family: monospace;
-      color: #fff;
-    }
-    .sub-meta {
-      display: flex;
       justify-content: space-between;
-      font-size: 12px;
-      color: var(--text-muted);
+      gap: 6px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     }
+    .kpi-label-row { display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--muted-foreground); text-transform: uppercase; letter-spacing: 0.5px; }
+    .kpi-value { font-size: 24px; font-weight: 800; font-family: monospace; letter-spacing: -0.5px; }
+    .kpi-sub { font-size: 11px; color: var(--muted-foreground); }
 
-    /* Budget & Quota section */
-    .grid-2 {
+    /* Budget & Quota Bar */
+    .budget-quota-grid {
       display: grid;
-      grid-template-columns: 1.5fr 1fr;
-      gap: 16px;
+      grid-template-columns: 1.8fr 1.2fr;
+      gap: 14px;
     }
-    @media (max-width: 768px) {
-      .grid-2 { grid-template-columns: 1fr; }
-    }
-    .progress-bar-bg {
-      height: 12px;
-      background: #1e293b;
-      border-radius: 6px;
-      overflow: hidden;
-      margin: 8px 0;
-    }
-    .progress-bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #38bdf8, #f59e0b);
-      width: 0%;
-      transition: width 0.3s ease;
-    }
-    .progress-bar-fill.danger { background: linear-gradient(90deg, #f59e0b, #ef4444); }
-
+    @media (max-width: 900px) { .budget-quota-grid { grid-template-columns: 1fr; } }
+    .progress-bar-bg { height: 10px; background: rgba(255, 255, 255, 0.06); border-radius: 5px; overflow: hidden; margin: 8px 0; }
+    .progress-bar-fill { height: 100%; background: linear-gradient(90deg, #38bdf8, #10b981); width: 0%; transition: width 0.3s ease; }
+    .progress-bar-fill.warning { background: linear-gradient(90deg, #38bdf8, #f59e0b); }
+    .progress-bar-fill.danger { background: linear-gradient(90deg, #f59e0b, #f43f5e); }
     .quota-box {
-      border: 1px dashed #334155;
-      border-radius: 6px;
-      padding: 12px;
-      background: rgba(15, 23, 42, 0.4);
+      border: 1px dashed var(--border); border-radius: 8px; padding: 12px; background: rgba(0, 0, 0, 0.2);
+      display: flex; flex-direction: column; justify-content: center; height: 100%;
     }
     .quota-box.throttled {
-      border-color: var(--red);
-      background: rgba(239, 68, 68, 0.1);
+      border-color: var(--rose); background: rgba(244, 63, 94, 0.08);
     }
 
-    /* Canvas Chart */
-    .chart-container {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
-      padding: 18px;
+    /* Main Chart Section */
+    .chart-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
     }
     .chart-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
+      display: flex; flex-direction: column; gap: 10px;
     }
-    canvas {
-      width: 100%;
-      height: 160px;
-      display: block;
+    @media (min-width: 768px) {
+      .chart-header { flex-direction: row; align-items: center; justify-content: space-between; }
+    }
+    .series-toggles { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; }
+    .series-checkbox {
+      display: flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 6px;
+      background: var(--background); border: 1px solid var(--border); cursor: pointer; user-select: none;
+    }
+    .series-checkbox input { cursor: pointer; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    
+    .canvas-container {
+      position: relative; width: 100%; height: 340px; background: rgba(9, 13, 22, 0.6);
+      border-radius: 8px; border: 1px solid var(--border); overflow: hidden;
+    }
+    canvas { display: block; width: 100%; height: 100%; }
+
+    /* Floating Tooltip */
+    .chart-tooltip {
+      position: absolute; pointer-events: none; display: none; background: rgba(17, 24, 39, 0.95);
+      backdrop-filter: blur(8px); border: 1px solid var(--border); border-radius: 8px; padding: 12px;
+      font-size: 12px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5); z-index: 20; min-width: 210px;
+    }
+    .tooltip-header { display: flex; justify-content: space-between; padding-bottom: 6px; margin-bottom: 6px; border-bottom: 1px solid var(--border); font-weight: 600; }
+    .tooltip-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-mono: monospace; }
+
+    /* Scrubber */
+    .scrubber-section { display: flex; flex-direction: column; gap: 6px; font-size: 11px; color: var(--muted-foreground); }
+    .scrubber-header { display: flex; justify-content: space-between; }
+    .scrubber-track {
+      position: relative; width: 100%; height: 28px; background: var(--background);
+      border-radius: 6px; border: 1px solid var(--border); padding: 2px; display: flex; align-items: center;
+    }
+    .scrubber-track canvas { opacity: 0.5; border-radius: 4px; pointer-events: none; }
+    .scrubber-track input[type="range"] {
+      position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; margin: 0;
     }
 
-    /* Table / Disaster Log */
-    .table-container {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
-      padding: 18px;
-      overflow-x: auto;
+    /* Diagnostics Grid */
+    .grid-diagnostics {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px;
     }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-      font-family: monospace;
+    .diag-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px;
+      display: flex; flex-direction: column; gap: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     }
-    th {
-      text-align: left;
-      padding: 8px 10px;
-      border-bottom: 1px solid var(--card-border);
-      color: var(--text-muted);
-      font-size: 11px;
-      text-transform: uppercase;
+    .diag-header { display: flex; justify-content: space-between; align-items: flex-start; }
+    .diag-canvas-box {
+      height: 160px; width: 100%; background: rgba(9, 13, 22, 0.5); border-radius: 8px; border: 1px solid var(--border); overflow: hidden;
     }
-    td {
-      padding: 10px;
-      border-bottom: 1px solid #1a2234;
-      vertical-align: middle;
+
+    /* Event Feed */
+    .event-feed {
+      flex: 1; min-height: 160px; max-height: 160px; overflow-y: auto; font-family: monospace; font-size: 11px;
+      display: flex; flex-direction: column; gap: 6px; padding-right: 4px;
     }
+    .event-row { display: flex; align-items: flex-start; gap: 8px; line-height: 1.3; }
+    .tag-cli { color: var(--amber); font-weight: 700; }
+    .tag-app { color: var(--purple); font-weight: 700; }
+    .tag-cache { color: var(--emerald); font-weight: 700; }
+    .tag-exec { color: var(--sky); font-weight: 700; }
+    .tag-429 { color: var(--rose); font-weight: 700; }
+
+    /* Ledger Table */
+    .table-section {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px;
+      display: flex; flex-direction: column; gap: 14px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+    .table-header { display: flex; flex-direction: column; gap: 10px; }
+    @media (min-width: 768px) {
+      .table-header { flex-direction: row; justify-content: space-between; align-items: center; }
+    }
+    .search-input {
+      background: var(--background); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px;
+      color: var(--foreground); font-size: 12px; outline: none; width: 220px; font-family: inherit;
+    }
+    .search-input:focus { border-color: var(--primary); }
+    .table-wrapper {
+      border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; max-height: 320px; overflow-y: auto;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+    thead {
+      background: var(--background); color: var(--muted-foreground); font-weight: 600; border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 10;
+    }
+    th { padding: 10px 12px; }
+    td { padding: 8px 12px; border-bottom: 1px solid #162032; font-family: monospace; }
     tr:hover td { background: rgba(255, 255, 255, 0.02); }
-    .badge {
-      display: inline-block;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 10px;
-      font-weight: 700;
+    .text-right { text-align: right; }
+
+    /* Footer */
+    footer {
+      display: flex; flex-direction: column; gap: 8px; justify-content: space-between; align-items: center;
+      padding-top: 16px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted-foreground);
     }
-    .badge-cli { background: rgba(245, 158, 11, 0.2); color: var(--yellow); }
-    .badge-app { background: rgba(168, 85, 247, 0.2); color: var(--purple); }
-    .cost-tag { color: var(--red); font-weight: 700; }
-    .savings-tag { color: var(--green); }
+    @media (min-width: 640px) { footer { flex-direction: row; } }
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="max-w-7xl">
+
+    <!-- Top Navigation / Telemetry Header -->
     <header>
-      <div class="logo-group">
-        <div id="liveBadge" class="badge-live">
-          <span class="pulse-dot"></span>
-          <span id="liveStatusText">LIVE TELEMETRY</span>
+      <div>
+        <div class="flex-row-center">
+          <div class="pulse-wrapper">
+            <span id="livePing" class="animate-ping"></span>
+            <span id="liveDot" class="pulse-dot"></span>
+          </div>
+          <h1 class="header-title">BrokeInRealTime — Token Telemetry</h1>
+          <span class="badge" id="sessionBadge">Session: standby</span>
+          <span id="statusBadge" class="badge badge-status">REALTIME ACTIVE</span>
         </div>
-        <div class="title">BrokeInRealTime <span style="font-size:12px; font-weight:normal; color:var(--text-muted);">v1.2.0</span></div>
+        <p style="font-size: 12px; color: var(--muted-foreground); margin-top: 4px;">
+          High-frequency token tracking, context caching performance, and theoretical cost telemetry for Google Antigravity.
+        </p>
       </div>
-      <div class="meta-tags">
-        <span>BIND: 127.0.0.1:8080</span>
-        <span id="uptimeTag">STREAM: ACTIVE</span>
+
+      <!-- Action Controls -->
+      <div class="controls-group">
+        <div class="btn-toggle-group">
+          <button id="modeRealtimeBtn" class="btn-toggle active">Live Stream</button>
+          <button id="modeHistoricalBtn" class="btn-toggle">Full History</button>
+        </div>
+
+        <button id="togglePlayBtn" class="action-btn">
+          <svg id="pauseIcon" style="width:14px; height:14px; fill:currentColor;" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+          <svg id="playIcon" style="width:14px; height:14px; fill:currentColor; display:none;" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          <span id="playBtnText">Pause Stream</span>
+        </button>
+
+        <div class="select-wrapper">
+          <span style="color:var(--muted-foreground); font-weight:600;">Model:</span>
+          <select id="modelSelect">
+            <option value="gemini-3.8-flash" selected>Gemini 3.8 Flash</option>
+            <option value="gemini-3.8-pro">Gemini 3.8 Pro</option>
+            <option value="gemini-3.1-pro">Gemini 3.1 Pro</option>
+            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+          </select>
+        </div>
       </div>
     </header>
 
-    <!-- Top Grid -->
-    <div class="grid-3">
-      <div class="card">
-        <div class="card-label">Theoretical Burn Velocity</div>
-        <div class="big-value" id="burnRateVal">$ 0.00 / hr</div>
-        <div class="sub-meta">
-          <span>Session Cost: <b id="sessionCostVal">$ 0.00</b></span>
-          <span id="rateThroughputVal">0 tok/s</span>
+    <!-- KPI Summary Metric Cards (6 Cards) -->
+    <section class="grid-kpi">
+      <!-- Total Tokens -->
+      <div class="card-kpi">
+        <div class="kpi-label-row">
+          <span>Total Tokens</span>
         </div>
+        <div class="kpi-value" id="kpiTotalTokens">0</div>
+        <span class="kpi-sub" id="kpiStepCount">0 Recorded Steps</span>
       </div>
 
-      <div class="card">
-        <div class="card-label">Tokens Ingested</div>
-        <div class="big-value" id="totalTokensVal">0</div>
-        <div class="sub-meta">
-          <span>App: <b id="appPercentVal">0%</b></span>
-          <span>CLI: <b id="cliPercentVal">0%</b></span>
+      <!-- Cache Read Tokens -->
+      <div class="card-kpi">
+        <div class="kpi-label-row">
+          <span>Cache Read</span>
+          <span class="badge" style="background:rgba(16,185,129,0.15); color:var(--emerald); border-color:transparent;" id="kpiCachePctBadge">0.0%</span>
         </div>
+        <div class="kpi-value" style="color:var(--emerald);" id="kpiCacheTokens">0</div>
+        <span class="kpi-sub">Context Cache Hits</span>
       </div>
 
-      <div class="card">
-        <div class="card-label">Context Cache Hit Ratio</div>
-        <div class="big-value" id="cacheRatioVal" style="color:var(--green);">0.0%</div>
-        <div class="sub-meta">
-          <span>Cached: <b id="cachedTokensVal">0</b></span>
-          <span>Savings: <b id="cacheSavingsVal" style="color:var(--green);">+$ 0.00</b></span>
+      <!-- Fresh Input Tokens -->
+      <div class="card-kpi">
+        <div class="kpi-label-row">
+          <span>Fresh Input</span>
         </div>
+        <div class="kpi-value" style="color:var(--sky);" id="kpiInputTokens">0</div>
+        <span class="kpi-sub">New Prompts & Tools</span>
       </div>
-    </div>
 
-    <!-- Budget & Quota Section -->
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-label">Daily Budget Tank (User Soft Cap)</div>
-        <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:4px;">
-          <span style="font-size:22px; font-weight:800; font-family:monospace;" id="budgetUsedVal">$ 0.00</span>
-          <span style="font-size:12px; color:var(--text-muted);" id="budgetLimitVal">Cap: $ 10.00</span>
+      <!-- Output / Reasoning Tokens -->
+      <div class="card-kpi">
+        <div class="kpi-label-row">
+          <span>Output / Thinking</span>
+        </div>
+        <div class="kpi-value" style="color:var(--amber);" id="kpiOutputTokens">0</div>
+        <span class="kpi-sub">Generations & Plans</span>
+      </div>
+
+      <!-- Active Context Size -->
+      <div class="card-kpi">
+        <div class="kpi-label-row">
+          <span>Context Load</span>
+          <span class="badge" style="background:rgba(168,85,247,0.15); color:var(--purple); border-color:transparent;" id="kpiContextPct">0.0%</span>
+        </div>
+        <div class="kpi-value" style="color:var(--purple);" id="kpiCurrentContext">0</div>
+        <span class="kpi-sub">of 1,000,000 Window</span>
+      </div>
+
+      <!-- Estimated Cost & Savings -->
+      <div class="card-kpi">
+        <div class="kpi-label-row">
+          <span>Est. Cost (Net)</span>
+        </div>
+        <div class="kpi-value" id="kpiEstCost">$ 0.00</div>
+        <span class="kpi-sub" style="color:var(--emerald);" id="kpiSavings">Saved $ 0.00 (Cache)</span>
+      </div>
+    </section>
+
+    <!-- Budget & Quota Bar -->
+    <section class="budget-quota-grid">
+      <div class="card-kpi">
+        <div class="kpi-label-row">
+          <span>Daily Budget Soft Cap</span>
+          <span id="budgetLimitVal" style="color:var(--muted-foreground);">Cap: $ 10.00</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:2px;">
+          <span style="font-size:20px; font-weight:800; font-family:monospace;" id="budgetUsedVal">$ 0.00</span>
+          <span style="font-size:11px; color:var(--muted-foreground);" id="budgetPercentText">0.0% used</span>
         </div>
         <div class="progress-bar-bg">
           <div id="budgetBar" class="progress-bar-fill"></div>
         </div>
-        <div class="sub-meta">
-          <span id="budgetPercentText">0.0% used</span>
-          <span>Projected EOD: <b id="projectedEODVal">$ 0.00</b></span>
+        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--muted-foreground);">
+          <span>Burn Velocity: <b id="burnVelocityVal" style="color:#fff;">$ 0.00/hr</b></span>
+          <span>Projected EOD: <b id="projectedEODVal" style="color:#fff;">$ 0.00</b></span>
         </div>
       </div>
 
-      <div class="card">
-        <div class="card-label">Server Quota Status</div>
+      <div class="card-kpi">
+        <div class="kpi-label-row">
+          <span>Server Quota Status</span>
+          <span id="quotaSubBadge" class="badge">HTTP 429 Sentinel</span>
+        </div>
         <div id="quotaBox" class="quota-box">
-          <div style="font-weight:700; margin-bottom:4px;" id="quotaTitle">NORMAL (No Throttling)</div>
-          <div style="font-size:12px; color:var(--text-muted);" id="quotaSub">Passively tracking HTTP 429 RESOURCE_EXHAUSTED errors</div>
+          <div style="font-weight:700; font-size:13px;" id="quotaTitle">NORMAL (No Throttling)</div>
+          <div style="font-size:11px; color:var(--muted-foreground); margin-top:2px;" id="quotaSub">Passively tracking HTTP 429 RESOURCE_EXHAUSTED errors</div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- Real-Time Chart -->
-    <div class="chart-container">
+    <!-- Main Chart Section: Token Dynamics Over Steps -->
+    <section class="chart-section">
       <div class="chart-header">
-        <div class="card-label">Throughput Velocity (Last 60 Seconds - Tokens/Sec)</div>
-        <div style="font-size:12px; font-family:monospace; color:var(--text-muted);" id="peakThroughput">PEAK: 0 tok/s</div>
-      </div>
-      <canvas id="velocityCanvas"></canvas>
-    </div>
+        <div>
+          <h2 style="font-size:16px; font-weight:700;">Token Dynamics Over Steps</h2>
+          <p style="font-size:12px; color:var(--muted-foreground);">
+            Interactive progression of fresh input, cached prompt reads, model output, and cumulative volume.
+          </p>
+        </div>
 
-    <!-- Live Event Feed -->
-    <div class="table-container">
-      <div class="card-label" style="margin-bottom:10px;">Recent Model Ingestions & Disasters</div>
-      <table>
-        <thead>
-          <tr>
-            <th>Time</th>
-            <th>Source</th>
-            <th>Model</th>
-            <th>Fresh In</th>
-            <th>Cached In</th>
-            <th>Out</th>
-            <th>Cache %</th>
-            <th>Cost</th>
-            <th>Tool Activity</th>
-          </tr>
-        </thead>
-        <tbody id="eventFeedBody">
-          <tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:20px;">Awaiting Antigravity activity...</td></tr>
-        </tbody>
-      </table>
-    </div>
+        <!-- Series Toggles & Scale -->
+        <div class="series-toggles">
+          <label class="series-checkbox">
+            <input type="checkbox" id="toggleCache" checked>
+            <span class="dot" style="background:var(--emerald);"></span>
+            <span>Cache Read</span>
+          </label>
+
+          <label class="series-checkbox">
+            <input type="checkbox" id="toggleInput" checked>
+            <span class="dot" style="background:var(--sky);"></span>
+            <span>Fresh Input</span>
+          </label>
+
+          <label class="series-checkbox">
+            <input type="checkbox" id="toggleOutput" checked>
+            <span class="dot" style="background:var(--amber);"></span>
+            <span>Output</span>
+          </label>
+
+          <label class="series-checkbox">
+            <input type="checkbox" id="toggleCumulative">
+            <span class="dot" style="background:var(--purple);"></span>
+            <span>Cumulative</span>
+          </label>
+
+          <div style="height:14px; width:1px; background:var(--border); margin:0 4px;"></div>
+
+          <button id="zoomResetBtn" class="action-btn" style="padding:4px 8px; font-size:11px;">
+            Reset Zoom
+          </button>
+        </div>
+      </div>
+
+      <!-- Canvas Container -->
+      <div class="canvas-container" id="mainCanvasContainer">
+        <canvas id="mainChartCanvas"></canvas>
+
+        <!-- Floating Tooltip -->
+        <div id="chartTooltip" class="chart-tooltip">
+          <div class="tooltip-header">
+            <span id="tooltipStep" style="color:#fff;">Step #0</span>
+            <span id="tooltipTime" style="color:var(--muted-foreground);">00:00:00</span>
+          </div>
+          <div class="tooltip-row">
+            <span style="color:var(--muted-foreground);"><span class="dot" style="background:var(--emerald);"></span> Cache Read:</span>
+            <span id="tooltipCache" style="color:var(--emerald);">0</span>
+          </div>
+          <div class="tooltip-row">
+            <span style="color:var(--muted-foreground);"><span class="dot" style="background:var(--sky);"></span> Fresh Input:</span>
+            <span id="tooltipInput" style="color:var(--sky);">0</span>
+          </div>
+          <div class="tooltip-row">
+            <span style="color:var(--muted-foreground);"><span class="dot" style="background:var(--amber);"></span> Output:</span>
+            <span id="tooltipOutput" style="color:var(--amber);">0</span>
+          </div>
+          <div class="tooltip-row" style="border-top:1px solid var(--border); padding-top:4px; margin-top:4px;">
+            <span style="color:var(--muted-foreground);">Tools Executed:</span>
+            <span id="tooltipTools">0</span>
+          </div>
+          <div class="tooltip-row">
+            <span style="color:var(--muted-foreground);">Efficiency:</span>
+            <span id="tooltipEfficiency" style="color:var(--emerald); font-weight:700;">0.0%</span>
+          </div>
+          <div class="tooltip-row">
+            <span style="color:var(--muted-foreground);">Source:</span>
+            <span id="tooltipSource" style="font-weight:700;">APP</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scrubber / Range Bar -->
+      <div class="scrubber-section">
+        <div class="scrubber-header">
+          <span id="scrubStartLabel">Step 1</span>
+          <span style="font-weight:600; color:var(--foreground);">Range Window</span>
+          <span id="scrubEndLabel">Step 0</span>
+        </div>
+        <div class="scrubber-track">
+          <canvas id="miniMapCanvas"></canvas>
+          <input type="range" id="rangeScrubber" min="10" max="60" value="60">
+        </div>
+      </div>
+    </section>
+
+    <!-- Secondary Diagnostics: Realtime Velocity, Cache Efficiency Donut & Live Event Stream -->
+    <section class="grid-diagnostics">
+      
+      <!-- Velocity Oscillator -->
+      <div class="diag-card">
+        <div class="diag-header">
+          <div>
+            <h3 style="font-size:14px; font-weight:600;">Streaming Velocity</h3>
+            <p style="font-size:11px; color:var(--muted-foreground);">Live tokens processed per second</p>
+          </div>
+          <div style="text-align:right;">
+            <span id="currentVelocityVal" style="font-size:17px; font-weight:800; color:var(--amber); font-family:monospace;">0</span>
+            <span style="font-size:11px; color:var(--muted-foreground); display:block;">tok/sec</span>
+          </div>
+        </div>
+        <div class="diag-canvas-box">
+          <canvas id="velocityCanvas"></canvas>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--muted-foreground);">
+          <span>Window: Rolling 60s</span>
+          <span id="peakVelocityVal">Peak: 0 tok/s</span>
+        </div>
+      </div>
+
+      <!-- Cache Breakdown Donut Ring -->
+      <div class="diag-card">
+        <div>
+          <h3 style="font-size:14px; font-weight:600;">Context Cache Efficiency</h3>
+          <p style="font-size:11px; color:var(--muted-foreground);">Prompt caching vs fresh ingestion</p>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:center; height:150px;">
+          <div style="position:relative; width:130px; height:130px;">
+            <canvas id="donutCanvas"></canvas>
+            <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none;">
+              <span id="donutCenterPct" style="font-size:18px; font-weight:800; font-family:monospace;">0.0%</span>
+              <span style="font-size:10px; color:var(--muted-foreground);">Hit Ratio</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; text-align:center; font-size:11px;">
+          <div style="background:var(--background); padding:6px; border-radius:6px; border:1px solid var(--border);">
+            <span style="color:var(--emerald); font-weight:700; display:block;" id="donutCachedText">0</span>
+            <span style="color:var(--muted-foreground);">Cached</span>
+          </div>
+          <div style="background:var(--background); padding:6px; border-radius:6px; border:1px solid var(--border);">
+            <span style="color:var(--sky); font-weight:700; display:block;" id="donutInputText">0</span>
+            <span style="color:var(--muted-foreground);">Fresh In</span>
+          </div>
+          <div style="background:var(--background); padding:6px; border-radius:6px; border:1px solid var(--border);">
+            <span style="color:var(--amber); font-weight:700; display:block;" id="donutOutputText">0</span>
+            <span style="color:var(--muted-foreground);">Output</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Telemetry Stream Log -->
+      <div class="diag-card">
+        <div class="diag-header">
+          <div>
+            <h3 style="font-size:14px; font-weight:600;">Live Event Feed</h3>
+            <p style="font-size:11px; color:var(--muted-foreground);">Realtime turn events and telemetry log</p>
+          </div>
+          <button id="clearLogBtn" class="action-btn" style="padding:2px 8px; font-size:10px;">
+            Clear
+          </button>
+        </div>
+
+        <div id="eventLogContainer" class="event-feed">
+          <div style="color:var(--muted-foreground); text-align:center; padding-top:40px;">Listening for live Antigravity turns...</div>
+        </div>
+
+        <div style="padding-top:8px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--muted-foreground);">
+          <span>Engine: Passive Ingestion</span>
+          <span style="display:flex; align-items:center; gap:4px;">
+            <span class="dot" style="background:var(--emerald);"></span> Synchronized
+          </span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Granular Step Explorer Table (Step-by-Step Ledger) -->
+    <section class="table-section">
+      <div class="table-header">
+        <div>
+          <h2 style="font-size:16px; font-weight:700;">Step-by-Step Ledger</h2>
+          <p style="font-size:12px; color:var(--muted-foreground);">Comprehensive execution trace from transcript</p>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:10px;">
+          <input type="text" id="tableSearchInput" placeholder="Filter steps..." class="search-input">
+          <span id="filteredStepCount" style="font-size:11px; color:var(--muted-foreground);">Showing 0 steps</span>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Step</th>
+              <th>Time</th>
+              <th>Source</th>
+              <th class="text-right">Fresh Input</th>
+              <th class="text-right">Cache Read</th>
+              <th class="text-right">Output</th>
+              <th class="text-right">Tools</th>
+              <th class="text-right">Efficiency</th>
+            </tr>
+          </thead>
+          <tbody id="stepTableBody">
+            <tr><td colspan="8" style="text-align:center; padding:20px; color:var(--muted-foreground);">Awaiting session activity...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <div>
+        <span>BrokeInRealTime — Strictly Local (127.0.0.1)</span>
+        <span style="margin: 0 6px;">•</span>
+        <span>Passive Antigravity Telemetry v1.2.0</span>
+      </div>
+      <div>
+        <span>Telemetry synchronized with transcript.jsonl & conversation_summaries.db</span>
+      </div>
+    </footer>
+
   </div>
 
   <script>
-    const canvas = document.getElementById('velocityCanvas');
-    const ctx = canvas.getContext('2d');
+    // --- Application State ---
+    let steps = []; // [step_index, time_str, input_tokens, cache_read_tokens, output_tokens, tools_count, source, model, tool_summary]
+    let velocityData = new Array(60).fill(0);
+    let isLiveActive = true;
+    let selectedModel = 'gemini-3.8-flash';
+    let visibleWindow = 60;
+    let hoveredIndex = -1;
+    let latestSnapshot = null;
 
-    function resizeCanvas() {
-      canvas.width = canvas.clientWidth * window.devicePixelRatio;
-      canvas.height = canvas.clientHeight * window.devicePixelRatio;
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
+    // Pricing models ($ per 1,000,000 tokens)
+    const PRICING = {
+      'gemini-3.8-flash': { input: 0.15, cache: 0.0375, output: 0.60 },
+      'gemini-3.8-pro': { input: 1.25, cache: 0.3125, output: 5.00 },
+      'gemini-3.1-pro': { input: 1.25, cache: 0.3125, output: 5.00 },
+      'gemini-2.5-flash': { input: 0.075, cache: 0.01875, output: 0.30 }
+    };
 
-    let chartData = new Array(60).fill(0);
-
-    function renderChart() {
-      const w = canvas.width;
-      const h = canvas.height;
-      ctx.clearRect(0, 0, w, h);
-
-      const maxVal = Math.max(...chartData, 1000);
-      const stepX = w / (chartData.length - 1);
-
-      // Gradient Fill
-      const grad = ctx.createLinearGradient(0, 0, 0, h);
-      grad.addColorStop(0, 'rgba(56, 189, 248, 0.35)');
-      grad.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
-
-      ctx.beginPath();
-      ctx.moveTo(0, h);
-      chartData.forEach((val, i) => {
-        const x = i * stepX;
-        const y = h - (val / maxVal) * (h - 20) - 10;
-        if (i === 0) ctx.lineTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.lineTo(w, h);
-      ctx.closePath();
-      ctx.fillStyle = grad;
-      ctx.fill();
-
-      // Stroke line
-      ctx.beginPath();
-      chartData.forEach((val, i) => {
-        const x = i * stepX;
-        const y = h - (val / maxVal) * (h - 20) - 10;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 2 * window.devicePixelRatio;
-      ctx.stroke();
-    }
+    // DOM Elements
+    const mainCanvas = document.getElementById('mainChartCanvas');
+    const mainCtx = mainCanvas.getContext('2d');
+    const miniMapCanvas = document.getElementById('miniMapCanvas');
+    const miniMapCtx = miniMapCanvas.getContext('2d');
+    const velocityCanvas = document.getElementById('velocityCanvas');
+    const velocityCtx = velocityCanvas.getContext('2d');
+    const donutCanvas = document.getElementById('donutCanvas');
+    const donutCtx = donutCanvas.getContext('2d');
+    const chartTooltip = document.getElementById('chartTooltip');
 
     function formatNumber(num) {
-      return (num || 0).toLocaleString();
-    }
-    function formatUSD(num) {
-      return '$ ' + (num || 0).toFixed(4);
-    }
-    function formatShortTime(iso) {
-      if (!iso) return '--:--:--';
-      const d = new Date(iso);
-      return d.toTimeString().split(' ')[0];
+      if (num === undefined || num === null) return '0';
+      if (num >= 1000000000) return (num / 1000000000).toFixed(2) + 'B';
+      if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
+      if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+      return num.toLocaleString();
     }
 
-    // WebSocket Management
+    function formatUSD(num) {
+      return '$ ' + (num || 0).toFixed(2);
+    }
+
+    // --- Update KPI Metric Displays ---
+    function updateKPIs() {
+      let totalInput = 0;
+      let totalCache = 0;
+      let totalOutput = 0;
+
+      for (let s of steps) {
+        totalInput += s[2];
+        totalCache += s[3];
+        totalOutput += s[4];
+      }
+
+      const grandTotal = totalInput + totalCache + totalOutput;
+      const totalPrompt = totalInput + totalCache;
+      const cacheHitRatio = totalPrompt > 0 ? (totalCache / totalPrompt) * 100 : 0;
+      const lastStep = steps[steps.length - 1];
+      const activeContext = lastStep ? (lastStep[2] + lastStep[3]) : 0;
+      const contextPct = ((activeContext / 1000000) * 100).toFixed(1);
+
+      document.getElementById('kpiTotalTokens').textContent = formatNumber(grandTotal);
+      document.getElementById('kpiStepCount').textContent = `${steps.length} Recorded Steps`;
+      document.getElementById('kpiCacheTokens').textContent = formatNumber(totalCache);
+      document.getElementById('kpiCachePctBadge').textContent = cacheHitRatio.toFixed(1) + '%';
+      document.getElementById('kpiInputTokens').textContent = formatNumber(totalInput);
+      document.getElementById('kpiOutputTokens').textContent = formatNumber(totalOutput);
+      document.getElementById('kpiCurrentContext').textContent = formatNumber(activeContext);
+      document.getElementById('kpiContextPct').textContent = contextPct + '%';
+
+      // Dynamic Cost Recalculation based on selected model
+      const rates = PRICING[selectedModel] || PRICING['gemini-3.8-flash'];
+      const costReal = (totalInput * rates.input + totalCache * rates.cache + totalOutput * rates.output) / 1000000;
+      const costWithoutCache = ((totalInput + totalCache) * rates.input + totalOutput * rates.output) / 1000000;
+      const savings = Math.max(0, costWithoutCache - costReal);
+
+      document.getElementById('kpiEstCost').textContent = formatUSD(costReal);
+      document.getElementById('kpiSavings').textContent = `Saved ${formatUSD(savings)} (Cache)`;
+      document.getElementById('donutCenterPct').textContent = cacheHitRatio.toFixed(1) + '%';
+      document.getElementById('donutCachedText').textContent = formatNumber(totalCache);
+      document.getElementById('donutInputText').textContent = formatNumber(totalInput);
+      document.getElementById('donutOutputText').textContent = formatNumber(totalOutput);
+
+      if (latestSnapshot) {
+        document.getElementById('budgetUsedVal').textContent = formatUSD(latestSnapshot.budget_used_usd);
+        document.getElementById('budgetLimitVal').textContent = `Cap: $ ${latestSnapshot.budget_limit_usd.toFixed(2)}`;
+        document.getElementById('budgetPercentText').textContent = `${latestSnapshot.budget_percent.toFixed(1)}% used`;
+        document.getElementById('burnVelocityVal').textContent = `$ ${latestSnapshot.burn_rate_per_hour.toFixed(2)}/hr`;
+        document.getElementById('projectedEODVal').textContent = formatUSD(latestSnapshot.projected_eod_usd);
+
+        const bar = document.getElementById('budgetBar');
+        const pct = Math.min(latestSnapshot.budget_percent, 100);
+        bar.style.width = pct + '%';
+        if (pct > 85) bar.className = 'progress-bar-fill danger';
+        else if (pct > 65) bar.className = 'progress-bar-fill warning';
+        else bar.className = 'progress-bar-fill';
+
+        // Quota
+        const qBox = document.getElementById('quotaBox');
+        const qTitle = document.getElementById('quotaTitle');
+        const qSub = document.getElementById('quotaSub');
+        const qSubBadge = document.getElementById('quotaSubBadge');
+
+        if (latestSnapshot.quota && latestSnapshot.quota.active) {
+          qBox.className = 'quota-box throttled';
+          qTitle.textContent = 'RESOURCE_EXHAUSTED (HTTP 429)';
+          qTitle.style.color = 'var(--rose)';
+          qSub.textContent = latestSnapshot.quota.message || `Cooldown active. Resets in ${latestSnapshot.quota.reset_duration}`;
+          qSubBadge.textContent = 'COOLDOWN ACTIVE';
+          qSubBadge.style.color = 'var(--rose)';
+        } else {
+          qBox.className = 'quota-box';
+          qTitle.textContent = 'NORMAL (No Throttling)';
+          qTitle.style.color = '#fff';
+          qSub.textContent = 'Passively tracking HTTP 429 RESOURCE_EXHAUSTED errors';
+          qSubBadge.textContent = 'HTTP 429 Sentinel';
+          qSubBadge.style.color = 'var(--muted-foreground)';
+        }
+      }
+    }
+
+    // --- Main Dynamics Canvas Chart ---
+    function renderMainChart() {
+      const rect = mainCanvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      mainCanvas.width = rect.width * dpr;
+      mainCanvas.height = rect.height * dpr;
+      mainCtx.resetTransform();
+      mainCtx.scale(dpr, dpr);
+
+      const w = rect.width;
+      const h = rect.height;
+      const padLeft = 60;
+      const padRight = 30;
+      const padTop = 20;
+      const padBottom = 30;
+      const chartW = w - padLeft - padRight;
+      const chartH = h - padTop - padBottom;
+
+      mainCtx.clearRect(0, 0, w, h);
+
+      const sliceStart = Math.max(0, steps.length - visibleWindow);
+      const visibleData = steps.slice(sliceStart);
+      const n = visibleData.length;
+      if (n === 0) return;
+
+      const showCache = document.getElementById('toggleCache').checked;
+      const showInput = document.getElementById('toggleInput').checked;
+      const showOutput = document.getElementById('toggleOutput').checked;
+      const showCumul = document.getElementById('toggleCumulative').checked;
+
+      let maxVal = 1000;
+      let runningSum = 0;
+      const cumulativeVals = [];
+
+      for (let s of visibleData) {
+        const cache = s[3];
+        const input = s[2];
+        const out = s[4];
+        runningSum += (cache + input + out);
+        cumulativeVals.push(runningSum);
+
+        if (showCache) maxVal = Math.max(maxVal, cache);
+        if (showInput) maxVal = Math.max(maxVal, input);
+        if (showOutput) maxVal = Math.max(maxVal, out * 5); // visually boost output
+      }
+      if (showCumul) maxVal = Math.max(maxVal, runningSum);
+      maxVal = Math.ceil(maxVal * 1.15 / 1000) * 1000;
+
+      // Draw Grid Lines & Labels
+      mainCtx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+      mainCtx.lineWidth = 1;
+      mainCtx.fillStyle = '#94a3b8';
+      mainCtx.font = '11px ui-monospace, monospace';
+      mainCtx.textAlign = 'right';
+
+      const gridCount = 5;
+      for (let i = 0; i <= gridCount; i++) {
+        const yVal = (maxVal / gridCount) * i;
+        const y = padTop + chartH - (i / gridCount) * chartH;
+        mainCtx.beginPath();
+        mainCtx.moveTo(padLeft, y);
+        mainCtx.lineTo(w - padRight, y);
+        mainCtx.stroke();
+        mainCtx.fillText(formatNumber(yVal), padLeft - 8, y + 4);
+      }
+
+      // X-Axis Step Labels
+      mainCtx.textAlign = 'center';
+      const xSteps = Math.min(8, n);
+      for (let i = 0; i < xSteps; i++) {
+        const idx = Math.floor((i / (xSteps - 1)) * (n - 1));
+        const x = padLeft + (idx / (n - 1)) * chartW;
+        const stepNum = visibleData[idx][0];
+        mainCtx.fillText('S' + stepNum, x, h - 10);
+      }
+
+      function drawSeries(getValue, strokeColor, fillColor, isArea = true) {
+        if (n < 2) return;
+        mainCtx.beginPath();
+        for (let i = 0; i < n; i++) {
+          const val = getValue(i);
+          const x = padLeft + (i / (n - 1)) * chartW;
+          const y = padTop + chartH - (val / maxVal) * chartH;
+          if (i === 0) mainCtx.moveTo(x, y);
+          else mainCtx.lineTo(x, y);
+        }
+
+        if (isArea && fillColor) {
+          mainCtx.lineTo(padLeft + chartW, padTop + chartH);
+          mainCtx.lineTo(padLeft, padTop + chartH);
+          mainCtx.closePath();
+          mainCtx.fillStyle = fillColor;
+          mainCtx.fill();
+        }
+
+        mainCtx.beginPath();
+        for (let i = 0; i < n; i++) {
+          const val = getValue(i);
+          const x = padLeft + (i / (n - 1)) * chartW;
+          const y = padTop + chartH - (val / maxVal) * chartH;
+          if (i === 0) mainCtx.moveTo(x, y);
+          else mainCtx.lineTo(x, y);
+        }
+        mainCtx.strokeStyle = strokeColor;
+        mainCtx.lineWidth = 2;
+        mainCtx.stroke();
+      }
+
+      if (showCache) drawSeries(i => visibleData[i][3], '#10b981', 'rgba(16, 185, 129, 0.15)', true);
+      if (showInput) drawSeries(i => visibleData[i][2], '#0ea5e9', 'rgba(14, 165, 233, 0.15)', true);
+      if (showOutput) drawSeries(i => visibleData[i][4] * 5, '#f59e0b', null, false);
+      if (showCumul) drawSeries(i => cumulativeVals[i], '#a855f7', 'rgba(168, 85, 247, 0.10)', true);
+
+      // Hover crosshair & dots
+      if (hoveredIndex >= 0 && hoveredIndex < n) {
+        const hx = padLeft + (hoveredIndex / (n - 1)) * chartW;
+        mainCtx.beginPath();
+        mainCtx.setLineDash([4, 4]);
+        mainCtx.moveTo(hx, padTop);
+        mainCtx.lineTo(hx, padTop + chartH);
+        mainCtx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+        mainCtx.lineWidth = 1.5;
+        mainCtx.stroke();
+        mainCtx.setLineDash([]);
+
+        const s = visibleData[hoveredIndex];
+        const dots = [
+          { val: s[3], color: '#10b981', show: showCache },
+          { val: s[2], color: '#0ea5e9', show: showInput },
+          { val: s[4] * 5, color: '#f59e0b', show: showOutput }
+        ];
+
+        for (let d of dots) {
+          if (d.show) {
+            const hy = padTop + chartH - (d.val / maxVal) * chartH;
+            mainCtx.beginPath();
+            mainCtx.arc(hx, hy, 4.5, 0, Math.PI * 2);
+            mainCtx.fillStyle = d.color;
+            mainCtx.fill();
+            mainCtx.strokeStyle = '#ffffff';
+            mainCtx.lineWidth = 1.5;
+            mainCtx.stroke();
+          }
+        }
+      }
+    }
+
+    // --- Mini-Map Canvas ---
+    function renderMiniMap() {
+      const rect = miniMapCanvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      miniMapCanvas.width = rect.width * dpr;
+      miniMapCanvas.height = rect.height * dpr;
+      miniMapCtx.resetTransform();
+      miniMapCtx.scale(dpr, dpr);
+
+      const w = rect.width;
+      const h = rect.height;
+      miniMapCtx.clearRect(0, 0, w, h);
+
+      const n = steps.length;
+      if (n < 2) return;
+
+      const maxVal = Math.max(...steps.map(s => s[2] + s[3]), 1000);
+
+      miniMapCtx.beginPath();
+      miniMapCtx.moveTo(0, h);
+      for (let i = 0; i < n; i++) {
+        const x = (i / (n - 1)) * w;
+        const val = steps[i][2] + steps[i][3];
+        const y = h - (val / maxVal) * h;
+        miniMapCtx.lineTo(x, y);
+      }
+      miniMapCtx.lineTo(w, h);
+      miniMapCtx.closePath();
+      miniMapCtx.fillStyle = 'rgba(56, 189, 248, 0.3)';
+      miniMapCtx.fill();
+    }
+
+    // --- Context Cache Donut Chart ---
+    function renderDonut() {
+      const rect = donutCanvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      donutCanvas.width = rect.width * dpr;
+      donutCanvas.height = rect.height * dpr;
+      donutCtx.resetTransform();
+      donutCtx.scale(dpr, dpr);
+
+      const w = rect.width;
+      const h = rect.height;
+      const cx = w / 2;
+      const cy = h / 2;
+      const radius = Math.min(w, h) / 2 - 6;
+      const innerRadius = radius - 12;
+
+      donutCtx.clearRect(0, 0, w, h);
+
+      let totalIn = 0, totalCache = 0, totalOut = 0;
+      for (let s of steps) {
+        totalIn += s[2];
+        totalCache += s[3];
+        totalOut += s[4];
+      }
+      const sum = totalIn + totalCache + totalOut;
+      if (sum === 0) {
+        donutCtx.beginPath();
+        donutCtx.arc(cx, cy, radius, 0, Math.PI * 2);
+        donutCtx.arc(cx, cy, innerRadius, Math.PI * 2, 0, true);
+        donutCtx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+        donutCtx.fill();
+        return;
+      }
+
+      const segments = [
+        { val: totalCache, color: '#10b981' },
+        { val: totalIn, color: '#0ea5e9' },
+        { val: totalOut, color: '#f59e0b' }
+      ];
+
+      let startAngle = -Math.PI / 2;
+      for (let seg of segments) {
+        const sliceAngle = (seg.val / sum) * Math.PI * 2;
+        donutCtx.beginPath();
+        donutCtx.arc(cx, cy, radius, startAngle, startAngle + sliceAngle);
+        donutCtx.arc(cx, cy, innerRadius, startAngle + sliceAngle, startAngle, true);
+        donutCtx.closePath();
+        donutCtx.fillStyle = seg.color;
+        donutCtx.fill();
+        startAngle += sliceAngle;
+      }
+    }
+
+    // --- Velocity Oscillator Canvas ---
+    function renderVelocity() {
+      const rect = velocityCanvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      velocityCanvas.width = rect.width * dpr;
+      velocityCanvas.height = rect.height * dpr;
+      velocityCtx.resetTransform();
+      velocityCtx.scale(dpr, dpr);
+
+      const w = rect.width;
+      const h = rect.height;
+      velocityCtx.clearRect(0, 0, w, h);
+
+      const n = velocityData.length;
+      if (n < 2) return;
+
+      const maxV = Math.max(...velocityData, 1000) * 1.25;
+
+      velocityCtx.beginPath();
+      velocityCtx.moveTo(0, h);
+      for (let i = 0; i < n; i++) {
+        const x = (i / (n - 1)) * w;
+        const y = h - (velocityData[i] / maxV) * (h - 10) - 5;
+        velocityCtx.lineTo(x, y);
+      }
+      velocityCtx.lineTo(w, h);
+      velocityCtx.closePath();
+
+      const grad = velocityCtx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, 'rgba(245, 158, 11, 0.35)');
+      grad.addColorStop(1, 'rgba(245, 158, 11, 0.0)');
+      velocityCtx.fillStyle = grad;
+      velocityCtx.fill();
+
+      velocityCtx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const x = (i / (n - 1)) * w;
+        const y = h - (velocityData[i] / maxV) * (h - 10) - 5;
+        if (i === 0) velocityCtx.moveTo(x, y);
+        else velocityCtx.lineTo(x, y);
+      }
+      velocityCtx.strokeStyle = '#f59e0b';
+      velocityCtx.lineWidth = 2;
+      velocityCtx.stroke();
+    }
+
+    // --- Live Event Feed Helper ---
+    function addEventLog(text, tag = 'INFO', tagClass = 'tag-cache') {
+      const container = document.getElementById('eventLogContainer');
+      const timeStr = new Date().toTimeString().split(' ')[0];
+      const div = document.createElement('div');
+      div.className = 'event-row';
+      div.innerHTML = `
+        <span style="color:var(--muted-foreground);">${timeStr}</span>
+        <span class="${tagClass}">[${tag}]</span>
+        <span style="color:var(--foreground); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${text}</span>
+      `;
+      container.insertBefore(div, container.firstChild);
+      if (container.children.length > 25) {
+        container.removeChild(container.lastChild);
+      }
+    }
+
+    // --- Step-by-Step Ledger Table ---
+    function populateTable(filterQuery = '') {
+      const tbody = document.getElementById('stepTableBody');
+      tbody.innerHTML = '';
+
+      let matching = steps;
+      if (filterQuery) {
+        const q = filterQuery.toLowerCase();
+        matching = steps.filter(s => 
+          ('step ' + s[0]).includes(q) || 
+          s[1].includes(q) || 
+          String(s[2]).includes(q) ||
+          String(s[3]).includes(q) ||
+          (s[6] || '').toLowerCase().includes(q) ||
+          (s[8] || '').toLowerCase().includes(q)
+        );
+      }
+
+      document.getElementById('filteredStepCount').textContent = `Showing ${matching.length} steps`;
+
+      if (matching.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--muted-foreground);">No steps matching query.</td></tr>`;
+        return;
+      }
+
+      const displaySteps = matching.slice(-100).reverse();
+      for (let s of displaySteps) {
+        const tr = document.createElement('tr');
+        const totalPrompt = s[2] + s[3];
+        const hitRate = totalPrompt > 0 ? ((s[3] / totalPrompt) * 100).toFixed(1) + '%' : '0.0%';
+        const srcBadge = s[6] === 'CLI' 
+          ? '<span class="badge" style="background:rgba(245,158,11,0.15); color:var(--amber);">CLI</span>' 
+          : '<span class="badge" style="background:rgba(168,85,247,0.15); color:var(--purple);">APP</span>';
+
+        tr.innerHTML = `
+          <td style="font-weight:700; color:var(--foreground);">#${s[0]}</td>
+          <td style="color:var(--muted-foreground);">${s[1]}</td>
+          <td>${srcBadge}</td>
+          <td class="text-right" style="color:var(--sky);">${s[2].toLocaleString()}</td>
+          <td class="text-right" style="color:var(--emerald);">${s[3].toLocaleString()}</td>
+          <td class="text-right" style="color:var(--amber);">${s[4].toLocaleString()}</td>
+          <td class="text-right" style="color:var(--foreground);">${s[5]}</td>
+          <td class="text-right" style="font-weight:700; color:var(--emerald);">${hitRate}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    // --- WebSocket Live Stream ---
     let ws = null;
     const wsUrl = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
 
-    function connect() {
+    function connectWS() {
       ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        document.getElementById('liveBadge').className = 'badge-live';
-        document.getElementById('liveStatusText').innerText = 'LIVE TELEMETRY';
+        document.getElementById('livePing').style.display = 'inline-flex';
+        document.getElementById('liveDot').style.background = 'var(--emerald)';
+        document.getElementById('statusBadge').textContent = 'REALTIME ACTIVE';
+        document.getElementById('statusBadge').className = 'badge badge-status';
+        addEventLog('Connected to BrokeInRealTime local telemetry stream', 'SYS', 'tag-exec');
       };
 
       ws.onclose = () => {
-        document.getElementById('liveBadge').className = 'badge-live offline';
-        document.getElementById('liveStatusText').innerText = 'RECONNECTING...';
-        setTimeout(connect, 2000);
+        document.getElementById('livePing').style.display = 'none';
+        document.getElementById('liveDot').style.background = 'var(--rose)';
+        document.getElementById('statusBadge').textContent = 'RECONNECTING...';
+        document.getElementById('statusBadge').className = 'badge badge-status offline';
+        setTimeout(connectWS, 2000);
       };
 
       ws.onerror = () => {
@@ -394,91 +1102,208 @@
       };
 
       ws.onmessage = (e) => {
+        if (!isLiveActive) return; // Stream paused by user
         try {
           const snap = JSON.parse(e.data);
-          updateUI(snap);
+          latestSnapshot = snap;
+
+          if (snap.session_id) {
+            document.getElementById('sessionBadge').textContent = `Session: ${snap.session_id}`;
+          }
+
+          if (snap.throughput_60s && snap.throughput_60s.length > 0) {
+            velocityData = snap.throughput_60s;
+            const currentTok = velocityData[velocityData.length - 1] || 0;
+            const peakTok = Math.max(...velocityData);
+            document.getElementById('currentVelocityVal').textContent = currentTok.toLocaleString();
+            document.getElementById('peakVelocityVal').textContent = `Peak: ${peakTok.toLocaleString()} tok/s`;
+          }
+
+          if (snap.steps && snap.steps.length > 0) {
+            const prevLen = steps.length;
+            steps = snap.steps.map(s => [
+              s.step_index,
+              s.time_str,
+              s.input_tokens,
+              s.cache_read_tokens,
+              s.output_tokens,
+              s.tools_count,
+              s.origin_source,
+              s.model,
+              s.tool_summary
+            ]);
+
+            // If new step added, log to event feed
+            if (steps.length > prevLen && prevLen > 0) {
+              const latest = steps[steps.length - 1];
+              const srcClass = latest[6] === 'CLI' ? 'tag-cli' : 'tag-app';
+              addEventLog(
+                `Step #${latest[0]} [${latest[6]}]: ${latest[2].toLocaleString()} in (${latest[3].toLocaleString()} cached), ${latest[4].toLocaleString()} out ${latest[8] ? '— ' + latest[8] : ''}`,
+                latest[6] || 'EXEC',
+                srcClass
+              );
+            }
+
+            const scrubber = document.getElementById('rangeScrubber');
+            scrubber.max = Math.max(steps.length, 60);
+            if (visibleWindow >= prevLen && prevLen > 0) {
+              visibleWindow = steps.length;
+              scrubber.value = visibleWindow;
+            }
+            document.getElementById('scrubEndLabel').textContent = `Step ${steps[steps.length - 1][0]}`;
+          }
+
+          updateKPIs();
+          renderMainChart();
+          renderMiniMap();
+          renderDonut();
+          renderVelocity();
+          populateTable(document.getElementById('tableSearchInput').value);
         } catch (err) {
-          console.error('Error parsing snapshot', err);
+          console.error('Error parsing telemetry snapshot', err);
         }
       };
     }
 
-    function updateUI(snap) {
-      document.getElementById('burnRateVal').innerText = '$ ' + snap.burn_rate_per_hour.toFixed(2) + ' / hr';
-      document.getElementById('sessionCostVal').innerText = formatUSD(snap.total_cost);
-      document.getElementById('rateThroughputVal').innerText = Math.round(snap.tokens_per_sec) + ' tok/s';
+    // --- Interactive Mouse Handlers ---
+    mainCanvas.addEventListener('mousemove', (e) => {
+      const rect = mainCanvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const padLeft = 60;
+      const padRight = 30;
+      const chartW = rect.width - padLeft - padRight;
 
-      document.getElementById('totalTokensVal').innerText = formatNumber(snap.total_tokens);
-      document.getElementById('appPercentVal').innerText = snap.app_percent.toFixed(1) + '%';
-      document.getElementById('cliPercentVal').innerText = snap.cli_percent.toFixed(1) + '%';
+      if (mx >= padLeft && mx <= rect.width - padRight) {
+        const sliceStart = Math.max(0, steps.length - visibleWindow);
+        const visibleData = steps.slice(sliceStart);
+        const relX = (mx - padLeft) / chartW;
+        hoveredIndex = Math.round(relX * (visibleData.length - 1));
 
-      document.getElementById('cacheRatioVal').innerText = snap.cache_ratio.toFixed(1) + '%';
-      document.getElementById('cachedTokensVal').innerText = formatNumber(snap.total_cached);
-      document.getElementById('cacheSavingsVal').innerText = '+$ ' + snap.total_savings.toFixed(4);
+        const target = visibleData[hoveredIndex];
+        if (target) {
+          chartTooltip.style.display = 'block';
+          chartTooltip.style.left = Math.min(rect.width - 230, mx + 15) + 'px';
+          chartTooltip.style.top = Math.min(rect.height - 180, Math.max(10, e.clientY - rect.top - 40)) + 'px';
 
-      // Budget
-      document.getElementById('budgetUsedVal').innerText = formatUSD(snap.budget_used_usd);
-      document.getElementById('budgetLimitVal').innerText = 'Cap: $ ' + snap.budget_limit_usd.toFixed(2);
-      document.getElementById('budgetPercentText').innerText = snap.budget_percent.toFixed(1) + '% used';
-      document.getElementById('projectedEODVal').innerText = formatUSD(snap.projected_eod_usd);
-
-      const bar = document.getElementById('budgetBar');
-      const pct = Math.min(snap.budget_percent, 100);
-      bar.style.width = pct + '%';
-      if (pct > 80) bar.className = 'progress-bar-fill danger';
-      else bar.className = 'progress-bar-fill';
-
-      // Quota Status
-      const qBox = document.getElementById('quotaBox');
-      const qTitle = document.getElementById('quotaTitle');
-      const qSub = document.getElementById('quotaSub');
-      if (snap.quota && snap.quota.active) {
-        qBox.className = 'quota-box throttled';
-        qTitle.innerText = 'RESOURCE_EXHAUSTED (HTTP 429)';
-        qTitle.style.color = 'var(--red)';
-        qSub.innerText = snap.quota.message || ('Cooldown active. Resets in ' + snap.quota.reset_duration);
+          document.getElementById('tooltipStep').textContent = 'Step #' + target[0];
+          document.getElementById('tooltipTime').textContent = target[1];
+          document.getElementById('tooltipCache').textContent = target[3].toLocaleString();
+          document.getElementById('tooltipInput').textContent = target[2].toLocaleString();
+          document.getElementById('tooltipOutput').textContent = target[4].toLocaleString();
+          document.getElementById('tooltipTools').textContent = target[5];
+          const totalPrompt = target[2] + target[3];
+          const rate = totalPrompt > 0 ? ((target[3] / totalPrompt) * 100).toFixed(1) + '%' : '0.0%';
+          document.getElementById('tooltipEfficiency').textContent = rate;
+          document.getElementById('tooltipSource').textContent = target[6] || 'APP';
+        }
+        renderMainChart();
       } else {
-        qBox.className = 'quota-box';
-        qTitle.innerText = 'NORMAL (No Throttling)';
-        qTitle.style.color = '#fff';
-        qSub.innerText = 'Passively tracking HTTP 429 RESOURCE_EXHAUSTED errors';
+        chartTooltip.style.display = 'none';
+        hoveredIndex = -1;
+        renderMainChart();
       }
+    });
 
-      // Chart
-      if (snap.throughput_60s && snap.throughput_60s.length > 0) {
-        chartData = snap.throughput_60s;
-        const peak = Math.max(...chartData);
-        document.getElementById('peakThroughput').innerText = 'PEAK: ' + formatNumber(peak) + ' tok/s';
-        renderChart();
+    mainCanvas.addEventListener('mouseleave', () => {
+      chartTooltip.style.display = 'none';
+      hoveredIndex = -1;
+      renderMainChart();
+    });
+
+    // Scrubber Range
+    const rangeScrubber = document.getElementById('rangeScrubber');
+    rangeScrubber.addEventListener('input', (e) => {
+      visibleWindow = parseInt(e.target.value, 10);
+      document.getElementById('scrubStartLabel').textContent = `Window: ${visibleWindow} steps`;
+      renderMainChart();
+    });
+
+    document.getElementById('toggleCache').addEventListener('change', renderMainChart);
+    document.getElementById('toggleInput').addEventListener('change', renderMainChart);
+    document.getElementById('toggleOutput').addEventListener('change', renderMainChart);
+    document.getElementById('toggleCumulative').addEventListener('change', renderMainChart);
+
+    document.getElementById('zoomResetBtn').addEventListener('click', () => {
+      visibleWindow = Math.max(steps.length, 60);
+      rangeScrubber.value = visibleWindow;
+      renderMainChart();
+    });
+
+    document.getElementById('modelSelect').addEventListener('change', (e) => {
+      selectedModel = e.target.value;
+      updateKPIs();
+      addEventLog(`Switched pricing model to ${selectedModel}`, 'CONFIG', 'tag-exec');
+    });
+
+    document.getElementById('tableSearchInput').addEventListener('input', (e) => {
+      populateTable(e.target.value);
+    });
+
+    document.getElementById('clearLogBtn').addEventListener('click', () => {
+      document.getElementById('eventLogContainer').innerHTML = '';
+    });
+
+    // Pause / Resume Stream
+    const togglePlayBtn = document.getElementById('togglePlayBtn');
+    const playIcon = document.getElementById('playIcon');
+    const pauseIcon = document.getElementById('pauseIcon');
+    const playBtnText = document.getElementById('playBtnText');
+    const livePing = document.getElementById('livePing');
+    const liveDot = document.getElementById('liveDot');
+    const statusBadge = document.getElementById('statusBadge');
+
+    togglePlayBtn.addEventListener('click', () => {
+      isLiveActive = !isLiveActive;
+      if (isLiveActive) {
+        playIcon.style.display = 'none';
+        pauseIcon.style.display = 'inline-block';
+        playBtnText.textContent = 'Pause Stream';
+        livePing.style.display = 'inline-flex';
+        liveDot.style.background = 'var(--emerald)';
+        statusBadge.textContent = 'REALTIME ACTIVE';
+        statusBadge.className = 'badge badge-status';
+        addEventLog('Telemetry stream resumed', 'SYS', 'tag-cache');
+      } else {
+        playIcon.style.display = 'inline-block';
+        pauseIcon.style.display = 'none';
+        playBtnText.textContent = 'Resume Stream';
+        livePing.style.display = 'none';
+        liveDot.style.background = 'var(--amber)';
+        statusBadge.textContent = 'STREAM PAUSED';
+        statusBadge.className = 'badge badge-status paused';
+        addEventLog('Telemetry stream paused by user', 'SYS', 'tag-cli');
       }
+    });
 
-      // Table Feed
-      if (snap.recent_events && snap.recent_events.length > 0) {
-        const tbody = document.getElementById('eventFeedBody');
-        tbody.innerHTML = '';
-        snap.recent_events.forEach(evt => {
-          const tr = document.createElement('tr');
-          const srcBadge = evt.origin_source === 'CLI' 
-            ? '<span class="badge badge-cli">CLI</span>' 
-            : '<span class="badge badge-app">APP</span>';
+    // Live Stream vs Full History Buttons
+    const modeRealtimeBtn = document.getElementById('modeRealtimeBtn');
+    const modeHistoricalBtn = document.getElementById('modeHistoricalBtn');
 
-          tr.innerHTML = `
-            <td>${formatShortTime(evt.created_at)}</td>
-            <td>${srcBadge}</td>
-            <td><span style="color:var(--text-muted);">${evt.model}</span></td>
-            <td>${formatNumber(evt.input_tokens)}</td>
-            <td style="color:var(--green);">${formatNumber(evt.cache_read_tokens)}</td>
-            <td>${formatNumber(evt.output_tokens)}</td>
-            <td style="font-weight:700;">${evt.cache_ratio.toFixed(0)}%</td>
-            <td class="cost-tag">+${formatUSD(evt.incremental_cost)}</td>
-            <td style="color:var(--text-muted);">${evt.tool_summary || '—'}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-      }
-    }
+    modeRealtimeBtn.addEventListener('click', () => {
+      visibleWindow = Math.min(60, steps.length);
+      rangeScrubber.value = visibleWindow;
+      modeRealtimeBtn.className = 'btn-toggle active';
+      modeHistoricalBtn.className = 'btn-toggle';
+      renderMainChart();
+    });
 
-    connect();
+    modeHistoricalBtn.addEventListener('click', () => {
+      visibleWindow = Math.max(steps.length, 60);
+      rangeScrubber.value = visibleWindow;
+      modeHistoricalBtn.className = 'btn-toggle active';
+      modeRealtimeBtn.className = 'btn-toggle';
+      renderMainChart();
+    });
+
+    // Window Resize Observer for flawless responsive canvas rendering
+    window.addEventListener('resize', () => {
+      renderMainChart();
+      renderMiniMap();
+      renderDonut();
+      renderVelocity();
+    });
+
+    connectWS();
   </script>
 </body>
 </html>

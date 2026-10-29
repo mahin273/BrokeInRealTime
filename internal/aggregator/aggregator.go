@@ -15,37 +15,57 @@ type TimePoint struct {
 	Cost      float64 `json:"cost"`
 }
 
+// StepData represents a single turn in the timeline and ledger.
+type StepData struct {
+	StepIndex       int64  `json:"step_index"`
+	TimeStr         string `json:"time_str"` // e.g. "17:27:24"
+	InputTokens     int64  `json:"input_tokens"`
+	CacheReadTokens int64  `json:"cache_read_tokens"`
+	OutputTokens    int64  `json:"output_tokens"`
+	ToolsCount      int    `json:"tools_count"`
+	OriginSource    string `json:"origin_source"` // "CLI" or "APP"
+	Model           string `json:"model"`
+	ToolSummary     string `json:"tool_summary,omitempty"`
+}
+
 // TelemetrySnapshot is the JSON payload broadcasted to web clients.
 type TelemetrySnapshot struct {
-	Timestamp       int64               `json:"timestamp"`
-	TotalTokens     int64               `json:"total_tokens"`
-	TotalInput      int64               `json:"total_input"`
-	TotalCached     int64               `json:"total_cached"`
-	TotalOutput     int64               `json:"total_output"`
-	CacheRatio      float64             `json:"cache_ratio"` // 0.0 - 100.0%
-	TotalCost       float64             `json:"total_cost"`
-	TotalRawCost    float64             `json:"total_raw_cost"`
-	TotalSavings    float64             `json:"total_savings"`
-	BurnRatePerHour float64             `json:"burn_rate_per_hour"`
-	TokensPerSec    float64             `json:"tokens_per_sec"`
-	AppTokens       int64               `json:"app_tokens"`
-	CliTokens       int64               `json:"cli_tokens"`
-	AppPercent      float64             `json:"app_percent"`
-	CliPercent      float64             `json:"cli_percent"`
-	BudgetLimitUSD  float64             `json:"budget_limit_usd"`
-	BudgetUsedUSD   float64             `json:"budget_used_usd"`
-	BudgetPercent   float64             `json:"budget_percent"`
-	ProjectedEODUSD float64             `json:"projected_eod_usd"`
-	Quota           parser.QuotaCooldown `json:"quota"`
-	Throughput60s   []int64             `json:"throughput_60s"` // 60 values (tokens/sec)
-	RecentEvents    []parser.TokenEvent `json:"recent_events"`  // Last 30 events
+	Timestamp           int64                `json:"timestamp"`
+	SessionID           string               `json:"session_id"`
+	TotalTokens         int64                `json:"total_tokens"`
+	TotalInput          int64                `json:"total_input"`
+	TotalCached         int64                `json:"total_cached"`
+	TotalOutput         int64                `json:"total_output"`
+	CacheRatio          float64              `json:"cache_ratio"` // 0.0 - 100.0%
+	ActiveContextTokens int64                `json:"active_context_tokens"`
+	ContextPct          float64              `json:"context_pct"`
+	TotalCost           float64              `json:"total_cost"`
+	TotalRawCost        float64              `json:"total_raw_cost"`
+	TotalSavings        float64              `json:"total_savings"`
+	BurnRatePerHour     float64              `json:"burn_rate_per_hour"`
+	TokensPerSec        float64              `json:"tokens_per_sec"`
+	AppTokens           int64                `json:"app_tokens"`
+	CliTokens           int64                `json:"cli_tokens"`
+	AppPercent          float64              `json:"app_percent"`
+	CliPercent          float64              `json:"cli_percent"`
+	BudgetLimitUSD      float64              `json:"budget_limit_usd"`
+	BudgetUsedUSD       float64              `json:"budget_used_usd"`
+	BudgetPercent       float64              `json:"budget_percent"`
+	ProjectedEODUSD     float64              `json:"projected_eod_usd"`
+	Quota               parser.QuotaCooldown `json:"quota"`
+	Throughput60s       []int64              `json:"throughput_60s"` // 60 values (tokens/sec)
+	RecentEvents        []parser.TokenEvent  `json:"recent_events"`  // Last 30 events
+	Steps               []StepData           `json:"steps"`          // Full step-by-step history
+	StepCount           int                  `json:"step_count"`
 }
 
 // Aggregator coordinates all telemetry accumulation and snapshot production.
 type Aggregator struct {
-	mu          sync.RWMutex
-	cfg         *config.Config
-	startTime   time.Time
+	mu        sync.RWMutex
+	cfg       *config.Config
+	startTime time.Time
+
+	sessionID string
 
 	// Totals
 	totalInput  int64
@@ -55,16 +75,21 @@ type Aggregator struct {
 	totalRaw    float64
 	totalSave   float64
 
-	appTokens   int64
-	cliTokens   int64
-	appCost     float64
-	cliCost     float64
+	appTokens int64
+	cliTokens int64
+	appCost   float64
+	cliCost   float64
+
+	lastContextTokens int64
 
 	// Rolling window (last 60 seconds, keyed by unix second)
 	rollingSeconds map[int64]*TimePoint
 
 	// Recent events buffer (FIFO up to 50)
 	recentEvents []parser.TokenEvent
+
+	// Chronological step history (up to 2000 steps)
+	stepsHistory []StepData
 
 	// Quota status
 	quota parser.QuotaCooldown
@@ -77,6 +102,7 @@ func NewAggregator(cfg *config.Config) *Aggregator {
 		startTime:      time.Now(),
 		rollingSeconds: make(map[int64]*TimePoint),
 		recentEvents:   make([]parser.TokenEvent, 0, 50),
+		stepsHistory:   make([]StepData, 0, 2000),
 		quota: parser.QuotaCooldown{
 			Active: false,
 		},
@@ -94,6 +120,9 @@ func (a *Aggregator) IngestEvent(evt parser.TokenEvent) {
 	a.totalCost += evt.IncrementalCost
 	a.totalRaw += evt.RawCost
 	a.totalSave += evt.CacheSavings
+
+	a.sessionID = evt.ConversationID
+	a.lastContextTokens = evt.InputTokens + evt.CacheReadTokens
 
 	if evt.OriginSource == "CLI" {
 		a.cliTokens += evt.TotalTokens
@@ -116,6 +145,23 @@ func (a *Aggregator) IngestEvent(evt parser.TokenEvent) {
 	a.recentEvents = append([]parser.TokenEvent{evt}, a.recentEvents...)
 	if len(a.recentEvents) > 30 {
 		a.recentEvents = a.recentEvents[:30]
+	}
+
+	// Append to chronological steps history (up to 2000)
+	stepItem := StepData{
+		StepIndex:       evt.StepIndex,
+		TimeStr:         evt.CreatedAt.Format("15:04:05"),
+		InputTokens:     evt.InputTokens,
+		CacheReadTokens: evt.CacheReadTokens,
+		OutputTokens:    evt.OutputTokens,
+		ToolsCount:      evt.ToolsCount,
+		OriginSource:    evt.OriginSource,
+		Model:           evt.Model,
+		ToolSummary:     evt.ToolSummary,
+	}
+	a.stepsHistory = append(a.stepsHistory, stepItem)
+	if len(a.stepsHistory) > 2000 {
+		a.stepsHistory = a.stepsHistory[len(a.stepsHistory)-2000:]
 	}
 }
 
@@ -174,7 +220,6 @@ func (a *Aggregator) Snapshot() TelemetrySnapshot {
 	}
 
 	tokensPerSec := float64(rollingTokens60s) / 60.0
-	// Velocity extrapolated to hourly burn
 	burnRatePerHour := rollingCost60s * 60.0 // 60s * 60 = 1 hour
 
 	totalTokens := a.totalInput + a.totalCached + a.totalOutput
@@ -199,40 +244,56 @@ func (a *Aggregator) Snapshot() TelemetrySnapshot {
 		budgetPercent = (budgetUsed / budgetLimit) * 100.0
 	}
 
-	// Projected EOD (simple linear extrapolation based on elapsed session time today)
 	projectedEOD := budgetUsed
 	elapsedHours := now.Sub(a.startTime).Hours()
 	if elapsedHours > 0.05 {
 		hourlyAvg := budgetUsed / elapsedHours
-		// estimate 8 active hours of work
 		projectedEOD = hourlyAvg * 8.0
 	}
 
 	eventsCopy := make([]parser.TokenEvent, len(a.recentEvents))
 	copy(eventsCopy, a.recentEvents)
 
+	stepsCopy := make([]StepData, len(a.stepsHistory))
+	copy(stepsCopy, a.stepsHistory)
+
+	sessionShort := a.sessionID
+	if len(sessionShort) > 8 {
+		sessionShort = sessionShort[:8]
+	}
+	if sessionShort == "" {
+		sessionShort = "standby"
+	}
+
+	contextPct := (float64(a.lastContextTokens) / 1000000.0) * 100.0
+
 	return TelemetrySnapshot{
-		Timestamp:       nowSec,
-		TotalTokens:     totalTokens,
-		TotalInput:      a.totalInput,
-		TotalCached:     a.totalCached,
-		TotalOutput:     a.totalOutput,
-		CacheRatio:      cacheRatio,
-		TotalCost:       a.totalCost,
-		TotalRawCost:    a.totalRaw,
-		TotalSavings:    a.totalSave,
-		BurnRatePerHour: burnRatePerHour,
-		TokensPerSec:    tokensPerSec,
-		AppTokens:       a.appTokens,
-		CliTokens:       a.cliTokens,
-		AppPercent:      appPercent,
-		CliPercent:      cliPercent,
-		BudgetLimitUSD:  budgetLimit,
-		BudgetUsedUSD:   budgetUsed,
-		BudgetPercent:   budgetPercent,
-		ProjectedEODUSD: projectedEOD,
-		Quota:           a.quota,
-		Throughput60s:   throughput,
-		RecentEvents:    eventsCopy,
+		Timestamp:           nowSec,
+		SessionID:           sessionShort,
+		TotalTokens:         totalTokens,
+		TotalInput:          a.totalInput,
+		TotalCached:         a.totalCached,
+		TotalOutput:         a.totalOutput,
+		CacheRatio:          cacheRatio,
+		ActiveContextTokens: a.lastContextTokens,
+		ContextPct:          contextPct,
+		TotalCost:           a.totalCost,
+		TotalRawCost:        a.totalRaw,
+		TotalSavings:        a.totalSave,
+		BurnRatePerHour:     burnRatePerHour,
+		TokensPerSec:        tokensPerSec,
+		AppTokens:           a.appTokens,
+		CliTokens:           a.cliTokens,
+		AppPercent:          appPercent,
+		CliPercent:          cliPercent,
+		BudgetLimitUSD:      budgetLimit,
+		BudgetUsedUSD:       budgetUsed,
+		BudgetPercent:       budgetPercent,
+		ProjectedEODUSD:     projectedEOD,
+		Quota:               a.quota,
+		Throughput60s:       throughput,
+		RecentEvents:        eventsCopy,
+		Steps:               stepsCopy,
+		StepCount:           len(stepsCopy),
 	}
 }
