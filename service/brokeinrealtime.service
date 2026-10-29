@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=%h/.local/bin/broke-daemon --port 8080
+ExecStart=%h/.local/bin/broke-daemon --port 8088
 Restart=always
 RestartSec=5s
 Environment=PATH=/usr/bin:/usr/local/bin
