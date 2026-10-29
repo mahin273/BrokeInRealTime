@@ -262,15 +262,16 @@ func (a *Aggregator) IngestEvent(evt parser.TokenEvent) {
 		gt.EstCost += perCost
 	}
 
-	// Daily & Monthly period accumulation
-	dayKey := evt.CreatedAt.Format("2006-01-02")
-	monthKey := evt.CreatedAt.Format("2006-01")
+	// Daily & Monthly period accumulation (strictly aligned to workstation local timezone)
+	localCreated := evt.CreatedAt.Local()
+	dayKey := localCreated.Format("2006-01-02")
+	monthKey := localCreated.Format("2006-01")
 
 	ds, ok := a.dailyStats[dayKey]
 	if !ok {
 		ds = &parser.PeriodStat{
 			PeriodKey: dayKey,
-			Label:     evt.CreatedAt.Format("Jan 02, 2006"),
+			Label:     localCreated.Format("Jan 02, 2006"),
 		}
 		a.dailyStats[dayKey] = ds
 	}
@@ -286,7 +287,7 @@ func (a *Aggregator) IngestEvent(evt parser.TokenEvent) {
 	if !mok {
 		ms = &parser.PeriodStat{
 			PeriodKey: monthKey,
-			Label:     evt.CreatedAt.Format("January 2006"),
+			Label:     localCreated.Format("January 2006"),
 		}
 		a.monthlyStats[monthKey] = ms
 	}
@@ -316,7 +317,7 @@ func (a *Aggregator) IngestEvent(evt parser.TokenEvent) {
 	// Append to this session's step history (up to 1500 per session)
 	stepItem := StepData{
 		StepIndex:       evt.StepIndex,
-		TimeStr:         evt.CreatedAt.Format("15:04:05"),
+		TimeStr:         localCreated.Format("15:04:05"),
 		InputTokens:     evt.InputTokens,
 		CacheReadTokens: evt.CacheReadTokens,
 		OutputTokens:    evt.OutputTokens,
@@ -715,7 +716,8 @@ func (a *Aggregator) computeConsumptionSummary(now time.Time) parser.Consumption
 		TurnCount:    totalTurns,
 	}
 
-	monthKey := now.Format("2006-01")
+	nowLocal := now.Local()
+	monthKey := nowLocal.Format("2006-01")
 	var thisMonthStat parser.PeriodStat
 	if ms, ok := a.monthlyStats[monthKey]; ok {
 		thisMonthStat = *ms
@@ -726,14 +728,15 @@ func (a *Aggregator) computeConsumptionSummary(now time.Time) parser.Consumption
 	} else {
 		thisMonthStat = parser.PeriodStat{
 			PeriodKey: monthKey,
-			Label:     now.Format("January 2006"),
+			Label:     nowLocal.Format("January 2006"),
 		}
 	}
 
-	todayKey := now.Format("2006-01-02")
+	todayKey := nowLocal.Format("2006-01-02")
 	var todayStat parser.PeriodStat
 	if ds, ok := a.dailyStats[todayKey]; ok {
 		todayStat = *ds
+		todayStat.Label = nowLocal.Format("Today (Jan 02)")
 		totalPrompt := todayStat.InputTokens + todayStat.CacheTokens
 		if totalPrompt > 0 {
 			todayStat.CacheRatio = (float64(todayStat.CacheTokens) / float64(totalPrompt)) * 100.0
@@ -741,7 +744,7 @@ func (a *Aggregator) computeConsumptionSummary(now time.Time) parser.Consumption
 	} else {
 		todayStat = parser.PeriodStat{
 			PeriodKey: todayKey,
-			Label:     now.Format("Today (Jan 02)"),
+			Label:     nowLocal.Format("Today (Jan 02)"),
 		}
 	}
 

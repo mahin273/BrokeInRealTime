@@ -120,9 +120,9 @@ func ParseIncremental(cursor *FileCursor, cfg *config.Config) (*ParseResult, err
 					createdAt := time.Now()
 					if raw.CreatedAt != "" {
 						if t, parseErr := time.Parse(time.RFC3339Nano, raw.CreatedAt); parseErr == nil {
-							createdAt = t
+							createdAt = t.Local()
 						} else if t, parseErr := time.Parse(time.RFC3339, raw.CreatedAt); parseErr == nil {
-							createdAt = t
+							createdAt = t.Local()
 						}
 					}
 

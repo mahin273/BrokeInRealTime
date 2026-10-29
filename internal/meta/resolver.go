@@ -56,7 +56,7 @@ func parseTime(s string) time.Time {
 	}
 	for _, f := range formats {
 		if t, err := time.Parse(f, s); err == nil {
-			return t
+			return t.Local()
 		}
 	}
 	return time.Now()
