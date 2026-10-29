@@ -2,6 +2,10 @@
 
 **BrokeInRealTime** is an ultra-lightweight, zero-network-risk local telemetry daemon and real-time dashboard for **Google Antigravity (IDE App & `agy` CLI)**. It tracks token consumption, context caching efficiency, theoretical financial burn rate, and quota exhaustion in real time.
 
+<p align="center">
+  <img src="assets/dashboard.png" alt="BrokeInRealTime Real-Time Telemetry Dashboard" width="100%" />
+</p>
+
 ---
 
 ## Key Highlights
