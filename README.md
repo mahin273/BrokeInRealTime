@@ -39,6 +39,24 @@ The installer will:
 4. Launch the real-time telemetry dashboard immediately at:
    **`http://127.0.0.1:8088`**
 
+### Updating BrokeInRealTime
+
+You can update BrokeInRealTime to the latest version at any time using either method:
+
+**Method 1: Built-in CLI command**
+```bash
+broke-daemon --update
+# or
+broke-daemon update
+```
+
+**Method 2: One-line terminal updater**
+```bash
+curl -fsSL https://raw.githubusercontent.com/mahin273/BrokeInRealTime/main/install.sh | bash
+```
+
+Both methods automatically verify the latest GitHub release, download the precompiled binary, update `~/.local/bin/broke-daemon`, and restart the background daemon service seamlessly.
+
 #### Uninstall Anytime
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mahin273/BrokeInRealTime/main/install.sh | bash -s -- --uninstall
@@ -79,6 +97,10 @@ Usage of ./broke-daemon:
         Path to custom pricing.json
   --no-backfill
         Do not backfill existing conversation history on launch
+  --update
+        Check GitHub for updates and self-update daemon to latest release
+  --force
+        Force reinstall of latest release even if version matches
   --version
         Print version and exit
 ```

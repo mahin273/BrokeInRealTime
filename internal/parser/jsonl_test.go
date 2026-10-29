@@ -32,9 +32,10 @@ func TestParseIncremental(t *testing.T) {
 	tmpDir := t.TempDir()
 	logPath := filepath.Join(tmpDir, "transcript.jsonl")
 
-	lines := `{"step_index":0,"source":"USER_EXPLICIT","type":"USER_INPUT","status":"DONE","created_at":"2026-10-29T17:20:00Z","content":"hello"}
-{"step_index":1,"source":"MODEL","type":"PLANNER_RESPONSE","status":"DONE","created_at":"2026-10-29T17:20:05Z","input_tokens":1000,"cache_read_tokens":4000,"output_tokens":200,"tool_calls":[{"name":"read_file"}]}
-{"step_index":2,"source":"SYSTEM","type":"SYSTEM_MESSAGE","status":"DONE","created_at":"2026-10-29T17:21:00Z","content":"[Message] RESOURCE_EXHAUSTED (code 429): Individual quota reached. Resets in 2h15m30s."}
+	nowStr := time.Now().UTC().Format(time.RFC3339)
+	lines := `{"step_index":0,"source":"USER_EXPLICIT","type":"USER_INPUT","status":"DONE","created_at":"` + nowStr + `","content":"hello"}
+{"step_index":1,"source":"MODEL","type":"PLANNER_RESPONSE","status":"DONE","created_at":"` + nowStr + `","input_tokens":1000,"cache_read_tokens":4000,"output_tokens":200,"tool_calls":[{"name":"read_file"}]}
+{"step_index":2,"source":"SYSTEM","type":"SYSTEM_MESSAGE","status":"DONE","created_at":"` + nowStr + `","content":"[Message] RESOURCE_EXHAUSTED (code 429): Individual quota reached. Resets in 2h15m30s."}
 `
 	if err := os.WriteFile(logPath, []byte(lines), 0644); err != nil {
 		t.Fatalf("failed to write test log: %v", err)

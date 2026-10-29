@@ -16,10 +16,11 @@ import (
 	"github.com/mahin273/BrokeInRealTime/internal/config"
 	"github.com/mahin273/BrokeInRealTime/internal/meta"
 	"github.com/mahin273/BrokeInRealTime/internal/server"
+	"github.com/mahin273/BrokeInRealTime/internal/updater"
 	"github.com/mahin273/BrokeInRealTime/internal/watcher"
 )
 
-const version = "1.2.1"
+const version = "1.2.2"
 
 func main() {
 	port := flag.Int("port", 8088, "Port to listen on (strictly bound to 127.0.0.1)")
@@ -27,11 +28,27 @@ func main() {
 	configPath := flag.String("config", "", "Path to custom pricing.json")
 	noBackfill := flag.Bool("no-backfill", false, "Do not backfill existing conversation history on launch")
 	showVersion := flag.Bool("version", false, "Print version and exit")
+	doUpdate := flag.Bool("update", false, "Check for updates and update daemon to the latest release")
+	forceUpdate := flag.Bool("force", false, "Force reinstall of latest release even if version matches")
+
+	// Support 'broke-daemon update' subcommand syntax
+	if len(os.Args) > 1 && os.Args[1] == "update" {
+		*doUpdate = true
+		// Remove 'update' from os.Args so flag.Parse can parse remaining flags like --force
+		os.Args = append(os.Args[:1], os.Args[2:]...)
+	}
 
 	flag.Parse()
 
 	if *showVersion {
 		fmt.Printf("BrokeInRealTime daemon v%s (Antigravity Telemetry)\n", version)
+		os.Exit(0)
+	}
+
+	if *doUpdate {
+		if err := updater.CheckAndApplyUpdate(version, *forceUpdate); err != nil {
+			log.Fatalf("[Error] Update failed: %v", err)
+		}
 		os.Exit(0)
 	}
 

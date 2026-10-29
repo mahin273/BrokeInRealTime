@@ -45,6 +45,7 @@ usage() {
   echo "Options:"
   echo "  --port <port>       Port to bind the dashboard (default: 8088)"
   echo "  --bin-dir <path>    Binary installation directory (default: ~/.local/bin)"
+  echo "  --update            Update existing installation to latest release and restart service"
   echo "  --no-service        Install binary only without systemd/launchd service"
   echo "  --uninstall         Cleanly remove service, binary, and autostart config"
   echo "  --help, -h          Show this help message"
@@ -61,6 +62,10 @@ while [[ $# -gt 0 ]]; do
     --bin-dir)
       BIN_DIR="$2"
       shift 2
+      ;;
+    --update)
+      # Handled automatically: re-running installer updates binary and restarts service
+      shift
       ;;
     --no-service)
       NO_SERVICE=true
@@ -150,6 +155,15 @@ trap cleanup EXIT
 # --- Step 1: Acquire Binary ---
 TARGET_BIN="${BIN_DIR}/broke-daemon"
 INSTALLED=false
+
+OLD_VER=""
+if [[ -x "${TARGET_BIN}" ]]; then
+  OLD_VER="$("${TARGET_BIN}" --version 2>/dev/null | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' || true)"
+  if [[ -n "${OLD_VER}" ]]; then
+    log_info "Detected existing installation: ${BOLD}${OLD_VER}${RESET} at ${TARGET_BIN}"
+    log_info "Proceeding with update to latest release..."
+  fi
+fi
 
 # Case A: Running directly inside existing BrokeInRealTime repository checkout
 if [[ -f "./cmd/broke-daemon/main.go" ]]; then
@@ -266,8 +280,13 @@ EOF
 
       log_info "Configuring systemd user service..."
       systemctl --user daemon-reload
-      systemctl --user enable --now brokeinrealtime
-      log_success "Started systemd service ${BOLD}brokeinrealtime.service${RESET}"
+      if systemctl --user is-active --quiet brokeinrealtime; then
+        systemctl --user restart brokeinrealtime
+        log_success "Restarted running systemd service ${BOLD}brokeinrealtime.service${RESET}"
+      else
+        systemctl --user enable --now brokeinrealtime
+        log_success "Started systemd service ${BOLD}brokeinrealtime.service${RESET}"
+      fi
     else
       log_warn "systemd not detected. You can launch BrokeInRealTime directly with:"
       echo -e "  ${BOLD}${TARGET_BIN} --port ${PORT} &${RESET}"
@@ -340,15 +359,20 @@ fi
 
 echo ""
 echo -e "${BOLD}${GREEN}================================================================${RESET}"
-echo -e "${BOLD}${GREEN}  BrokeInRealTime has been successfully installed! 🚀${RESET}"
+if [[ -n "${OLD_VER}" ]]; then
+  echo -e "${BOLD}${GREEN}  BrokeInRealTime has been successfully updated!${RESET}"
+else
+  echo -e "${BOLD}${GREEN}  BrokeInRealTime has been successfully installed!${RESET}"
+fi
 echo -e "${BOLD}${GREEN}================================================================${RESET}"
 echo ""
-echo -e "  🌐 ${BOLD}Real-Time Dashboard:${RESET}  ${CYAN}http://127.0.0.1:${PORT}${RESET}"
-echo -e "  📁 ${BOLD}Binary Location:${RESET}      ${TARGET_BIN}"
+echo -e "  Dashboard:         ${CYAN}http://127.0.0.1:${PORT}${RESET}"
+echo -e "  Binary:            ${TARGET_BIN}"
 if [[ "${OS}" == "linux" && "${NO_SERVICE}" == "false" ]]; then
-  echo -e "  🔍 ${BOLD}Service Status:${RESET}       systemctl --user status brokeinrealtime"
-  echo -e "  📜 ${BOLD}Live Logs:${RESET}            journalctl --user -u brokeinrealtime -f"
-  echo -e "  🔄 ${BOLD}Restart Daemon:${RESET}       systemctl --user restart brokeinrealtime"
+  echo -e "  Service Status:    systemctl --user status brokeinrealtime"
+  echo -e "  Live Logs:         journalctl --user -u brokeinrealtime -f"
+  echo -e "  Restart:           systemctl --user restart brokeinrealtime"
 fi
-echo -e "  🗑️ ${BOLD}Uninstall Command:${RESET}    curl -fsSL https://raw.githubusercontent.com/${REPO}/main/install.sh | bash -s -- --uninstall"
+echo -e "  Check Update:      broke-daemon --update"
+echo -e "  Uninstall:         curl -fsSL https://raw.githubusercontent.com/${REPO}/main/install.sh | bash -s -- --uninstall"
 echo ""
