@@ -37,6 +37,16 @@ func DefaultConfig() *Config {
 				CachePerMillion:  0.0375,
 				OutputPerMillion: 0.60,
 			},
+			"argon": {
+				InputPerMillion:  1.25,
+				CachePerMillion:  0.3125,
+				OutputPerMillion: 5.00,
+			},
+			"gemini-4-argon": {
+				InputPerMillion:  1.25,
+				CachePerMillion:  0.3125,
+				OutputPerMillion: 5.00,
+			},
 			"gemini-3.8-pro": {
 				InputPerMillion:  1.25,
 				CachePerMillion:  0.3125,

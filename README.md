@@ -1,21 +1,21 @@
-# BrokeInRealTime 💸
+# BrokeInRealTime
 
 **BrokeInRealTime** is an ultra-lightweight, zero-network-risk local telemetry daemon and real-time dashboard for **Google Antigravity (IDE App & `agy` CLI)**. It tracks token consumption, context caching efficiency, theoretical financial burn rate, and quota exhaustion in real time.
 
 ---
 
-##  Key Highlights
+## Key Highlights
 
 * **100% Offline & Local (`127.0.0.1`):** No cloud servers, no remote telemetry, no external databases. All data stays strictly on your workstation.
 * **Zero External Scraping:** Passively watches local Antigravity transcript logs and SQLite session tables. Never creates outbound network requests to Google or Gemini endpoints.
 * **Context Cache-Aware Accounting:** Distinguishes between fresh input tokens and discounted cached read tokens (`cache_read_tokens`), displaying true theoretical cost and prompt caching dollar savings.
 * **App vs. CLI Attribution:** Automatically identifies whether tokens originated in the Desktop IDE or the terminal CLI (`agy`) via native session metadata.
-* **Server Quota & Cooldown Tracker:** Intercepts HTTP 429 `RESOURCE_EXHAUSTED` events to display live cooldown countdown timers, alongside a customizable daily soft budget bar.
+* **Server Quota & Cooldown Tracker:** Intercepts HTTP 429 `RESOURCE_EXHAUSTED` events to display live cooldown countdown timers.
 * **Single Binary Footprint:** Compiled in Go to a self-contained executable ($< 9\text{ MB}$, $\approx 12\text{ MB}$ RSS memory, $\le 0.2\%$ idle CPU) embedding an offline, dependency-free HTML5 Canvas dashboard.
 
 ---
 
-## ⚡ One-Command Install (Recommended)
+## One-Command Install (Recommended)
 
 Run this single command in your terminal to install and start BrokeInRealTime automatically:
 
@@ -33,7 +33,7 @@ The installer will:
 2. Install the lightweight binary to `~/.local/bin/broke-daemon`.
 3. Configure and start the user background service (`systemd --user` on Linux, `launchd` on macOS).
 4. Launch the real-time telemetry dashboard immediately at:
-   👉 **`http://127.0.0.1:8088`**
+   **`http://127.0.0.1:8088`**
 
 #### Uninstall Anytime
 ```bash
@@ -42,7 +42,7 @@ curl -fsSL https://raw.githubusercontent.com/mahin273/BrokeInRealTime/main/insta
 
 ---
 
-## 🛠️ Manual Build & Quickstart
+## Manual Build & Quickstart
 
 ### Prerequisites
 * [Go 1.22+](https://golang.org) (with standard C toolchain `gcc` for SQLite CGO driver).
@@ -81,7 +81,7 @@ Usage of ./broke-daemon:
 
 ---
 
-##  Background Service Setup
+## Background Service Setup
 
 ### Linux (`systemd --user`)
 1. Copy the compiled binary to your local bin:
@@ -114,7 +114,7 @@ Usage of ./broke-daemon:
 
 ---
 
-##  Pricing Configuration
+## Pricing Configuration
 
 Model rates can be customized in `pricing.json` (or placed in `~/.config/brokeinrealtime/pricing.json`):
 
@@ -126,28 +126,18 @@ Model rates can be customized in `pricing.json` (or placed in `~/.config/brokein
       "cache_per_million": 0.0375,
       "output_per_million": 0.60
     },
-    "gemini-3.8-pro": {
+    "argon": {
       "input_per_million": 1.25,
       "cache_per_million": 0.3125,
-      "output_per_million": 5.00,
-      "context_tiered": {
-        "threshold": 128000,
-        "high_input_per_million": 2.50,
-        "high_cache_per_million": 0.6250,
-        "high_output_per_million": 10.00
-      }
+      "output_per_million": 5.00
     }
-  },
-  "budget": {
-    "daily_usd_limit": 10.00,
-    "daily_token_limit": 10000000
   }
 }
 ```
 
 ---
 
-##  Security
+## Security
 
 * **127.0.0.1 Binding:** Refuses external interfaces (`0.0.0.0`).
 * **Cross-Site WebSocket Hijacking (CSWSH) Protection:** Verifies the `Origin` header on WebSocket handshakes to block untrusted browser origins from reading token activity.
@@ -155,5 +145,5 @@ Model rates can be customized in `pricing.json` (or placed in `~/.config/brokein
 
 ---
 
-##  License
+## License
 MIT License.

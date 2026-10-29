@@ -47,4 +47,11 @@ func TestTieredPricing(t *testing.T) {
 	if math.Abs(totalCost-expectedTotal) > 0.0001 {
 		t.Errorf("expected tiered totalCost %f, got %f", expectedTotal, totalCost)
 	}
+
+	// Test Argon: 100k input ($0.125), 400k cache ($0.125), 10k output ($0.05) = $0.30
+	argonCost, _, _ := cfg.CalculateCost("argon", 100000, 400000, 10000)
+	expectedArgon := 0.30
+	if math.Abs(argonCost-expectedArgon) > 0.0001 {
+		t.Errorf("expected argon cost %f, got %f", expectedArgon, argonCost)
+	}
 }

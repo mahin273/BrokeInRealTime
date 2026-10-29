@@ -364,9 +364,7 @@
           <span style="color:var(--muted-foreground); font-weight:600;">Pricing:</span>
           <select id="modelSelect">
             <option value="gemini-3.8-flash" selected>Gemini 3.8 Flash</option>
-            <option value="gemini-3.8-pro">Gemini 3.8 Pro</option>
-            <option value="gemini-3.1-pro">Gemini 3.1 Pro</option>
-            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+            <option value="argon">Argon</option>
           </select>
         </div>
       </div>
@@ -923,9 +921,8 @@
     // Pricing models ($ per 1,000,000 tokens)
     const PRICING = {
       'gemini-3.8-flash': { input: 0.15, cache: 0.0375, output: 0.60 },
-      'gemini-3.8-pro': { input: 1.25, cache: 0.3125, output: 5.00 },
-      'gemini-3.1-pro': { input: 1.25, cache: 0.3125, output: 5.00 },
-      'gemini-2.5-flash': { input: 0.075, cache: 0.01875, output: 0.30 }
+      'argon': { input: 1.25, cache: 0.3125, output: 5.00 },
+      'gemini-4-argon': { input: 1.25, cache: 0.3125, output: 5.00 }
     };
 
     // DOM Elements
